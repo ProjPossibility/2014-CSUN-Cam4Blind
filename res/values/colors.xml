@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <!--Color listing of standard color shades-->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="grey_normal">#696969</color>
+    <color name="grey_light">#CCCCCC</color>
+    <color name="grey_dark">#888888</color>  
+    <color name="blue_normal">#0000FF</color>   
+    <color name="blue_light">#00BFFF</color>
+    <color name="blue_dark">#1E90FF</color>
+    <color name="green_normal">#008000</color>
+    <color name="green_light">#ADFF2F</color>
+    <color name="green_dark">#228B22</color>
+    <color name="red_normal">#FF0000</color>
+    <color name="red_light">#F08080</color>
+    <color name="red_dark">#CC0000</color>
+    <color name="brown_normal">#8B5A2B</color>    
+    <color name="brown_light">#DEB887</color>
+    <color name="brown_dark">#643200</color>
+    <color name="orange_normal">#FFA200</color>    
+    <color name="orange_light">#F0B44D</color>
+    <color name="orange_dark">#E8970C</color>    
+    <color name="yellow_normal">#FFFB00</color>    
+    <color name="yellow_light">#F0EE86</color>
+    <color name="yellow_dark">#DBD940</color>  
+    
+    <!--Additional color shades-->
+    <color name="grey_shade">#6E6E6E</color>
+    <color name="blue_shade">#CAE1FF</color>    
+    <color name="green_shade">#88D66B</color> 
+    <color name="red_shade">#FF003C</color> 
+    <color name="brown_shade">#A35200</color>
+    <color name="orange_shade">#FFC14D</color>
+    <color name="yellow_shade">#BDA400</color>
+    
+</resources>
