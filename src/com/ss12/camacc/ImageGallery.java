@@ -1,5 +1,7 @@
 package com.ss12.camacc;
 
+import Catalano.Imaging.FastBitmap;
+import Catalano.Imaging.Filters.Sepia;
 import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
@@ -68,7 +70,15 @@ public class ImageGallery extends Activity {
             cursor.close();
 
             ImageView imageView = (ImageView) findViewById(R.id.imageView);
-            imageView.setImageBitmap(doGreyscale(BitmapFactory.decodeFile(picturePath)));
+            FastBitmap img = new FastBitmap(BitmapFactory.decodeFile(picturePath));
+            img.toRGB();
+
+            Sepia sepia = new Sepia();
+            sepia.applyInPlace(img);
+
+            Bitmap bitmap = img.toBitmap();
+            //imageView.setImageBitmap(doGreyscale(BitmapFactory.decodeFile(picturePath)));
+            imageView.setImageBitmap(bitmap);
 
         }
     }
