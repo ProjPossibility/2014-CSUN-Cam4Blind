@@ -21,6 +21,7 @@ import android.widget.ImageView;
 import com.example.navigationdrawer.R;
 
 public class ImageGallery extends Activity {
+    private static final String TAG = "FilterActivity";
 
     private static final int RESULT_LOAD_IMAGE = 1;
 
@@ -30,7 +31,7 @@ public class ImageGallery extends Activity {
     private static final int FILTER_EMBOSS = 3;
     private static final int FILTER_INVERT = 4;
 
-    Button button;
+    Button imgButton, filterButton;
     ImageView image;
 
     @Override
@@ -46,8 +47,11 @@ public class ImageGallery extends Activity {
 
         image = (ImageView) findViewById(R.id.imageView);
 
-        button = (Button) findViewById(R.id.btnChangeImage);
-        button.setOnClickListener(new View.OnClickListener() {
+        imgButton = (Button) findViewById(R.id.btnChangeImage);
+        filterButton = (Button) findViewById(R.id.btnApplyFilter);
+        filterButton.setEnabled(false);
+
+        imgButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View arg0) {
@@ -63,6 +67,7 @@ public class ImageGallery extends Activity {
         });
 
     }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -81,16 +86,12 @@ public class ImageGallery extends Activity {
             cursor.close();
 
             ImageView imageView = (ImageView) findViewById(R.id.imageView);
-            /*FastBitmap img = new FastBitmap(BitmapFactory.decodeFile(picturePath));
-            img.toRGB();
-
-            Sepia sepia = new Sepia();
-            sepia.applyInPlace(img);
-
-            Bitmap bitmap = img.toBitmap();
-            //imageView.setImageBitmap(doGreyscale(BitmapFactory.decodeFile(picturePath)));*/
             Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
+
             imageView.setImageBitmap(applyFilter(FILTER_INVERT, bitmap));
+
+            // Since we now have an image, can apply a filter to it.
+            imgButton.setEnabled(true);
 
         }
     }
