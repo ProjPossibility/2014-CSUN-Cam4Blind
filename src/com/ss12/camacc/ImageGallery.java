@@ -1,7 +1,11 @@
 package com.ss12.camacc;
 
 import Catalano.Imaging.FastBitmap;
+import Catalano.Imaging.Filters.Emboss;
+import Catalano.Imaging.Filters.Grayscale;
+import Catalano.Imaging.Filters.Invert;
 import Catalano.Imaging.Filters.Sepia;
+import Catalano.Imaging.IBaseInPlace;
 import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
@@ -18,7 +22,14 @@ import com.example.navigationdrawer.R;
 
 public class ImageGallery extends Activity {
 
-    private static int RESULT_LOAD_IMAGE = 1;
+    private static final int RESULT_LOAD_IMAGE = 1;
+
+    // Image Filters
+    private static final int FILTER_SEPIA = 1;
+    private static final int FILTER_GRAYSCALE = 2;
+    private static final int FILTER_EMBOSS = 3;
+    private static final int FILTER_INVERT = 4;
+
     Button button;
     ImageView image;
 
@@ -70,17 +81,51 @@ public class ImageGallery extends Activity {
             cursor.close();
 
             ImageView imageView = (ImageView) findViewById(R.id.imageView);
-            FastBitmap img = new FastBitmap(BitmapFactory.decodeFile(picturePath));
+            /*FastBitmap img = new FastBitmap(BitmapFactory.decodeFile(picturePath));
             img.toRGB();
 
             Sepia sepia = new Sepia();
             sepia.applyInPlace(img);
 
             Bitmap bitmap = img.toBitmap();
-            //imageView.setImageBitmap(doGreyscale(BitmapFactory.decodeFile(picturePath)));
-            imageView.setImageBitmap(bitmap);
+            //imageView.setImageBitmap(doGreyscale(BitmapFactory.decodeFile(picturePath)));*/
+            Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
+            imageView.setImageBitmap(applyFilter(FILTER_INVERT, bitmap));
 
         }
+    }
+
+    /**
+     *
+     * @param   id      desired filter to be applied to a bitmap
+     * @param   src     bitmap source image to be filtered
+     * @return          src bitmap with filter applied
+     */
+    private static Bitmap applyFilter(int id, Bitmap src) {
+        FastBitmap img = new FastBitmap(src);
+        // Interface for generic filter
+        IBaseInPlace filter = null;
+
+        switch(id) {
+            case FILTER_SEPIA:
+                filter = new Sepia();
+                break;
+            case FILTER_GRAYSCALE:
+                filter = new Grayscale();
+                break;
+            case FILTER_EMBOSS:
+                filter = new Emboss();
+                break;
+            case FILTER_INVERT:
+                filter = new Invert();
+                break;
+            default:
+                break;
+        }
+        if(filter != null) {
+            filter.applyInPlace(img);
+        }
+        return img.toBitmap();
     }
 
     /* Prototype from http://xjaphx.wordpress.com/2011/06/21/image-processing-grayscale-image-on-the-fly
