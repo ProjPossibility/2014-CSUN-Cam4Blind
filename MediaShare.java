@@ -43,8 +43,6 @@ public class MyActivity extends Activity {
                         // There's a lot of info available in the
                         // ResolveInfo and ActivityInfo objects: the name, the icon, etc.
 
-                        // You could get a component name like this:
-
                     }
                 }
             }
@@ -54,7 +52,7 @@ public class MyActivity extends Activity {
 
                 if (ai != null) {
                     //ComponentName cmp = new ComponentName(ai.packageName, ai.name);
-
+                    //if (what the user asked for) {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
                     shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
                     shareIntent.setType("image/*");
@@ -65,6 +63,7 @@ public class MyActivity extends Activity {
                     shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
                     shareIntent.setPackage(ai.packageName);
                     startActivity(shareIntent);
+                    //}
                 }
             }
         }
