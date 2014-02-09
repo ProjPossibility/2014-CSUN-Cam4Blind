@@ -27,3 +27,6 @@ proguard/
 workspace.xml
 task.xml
 *.iws
+
+# Out
+out/
