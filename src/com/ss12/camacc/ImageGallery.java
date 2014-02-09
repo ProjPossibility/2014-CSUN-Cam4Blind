@@ -7,6 +7,7 @@ import Catalano.Imaging.Filters.Invert;
 import Catalano.Imaging.Filters.Sepia;
 import Catalano.Imaging.IBaseInPlace;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -20,6 +21,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import com.example.navigationdrawer.R;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class ImageGallery extends Activity {
     private static final String TAG = "FilterActivity";
@@ -83,7 +89,7 @@ public class ImageGallery extends Activity {
 
         if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && null != data) {
             Uri selectedImage = data.getData();
-            Log.i(TAG, selectedImage.toString());
+            /*Log.i(TAG, selectedImage.toString());
             String[] filePathColumn = { MediaStore.Images.Media.DATA };
 
             Cursor cursor = getContentResolver().query(selectedImage,
@@ -92,28 +98,75 @@ public class ImageGallery extends Activity {
 
             int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
             String picturePath = cursor.getString(columnIndex);
-            cursor.close();
+            cursor.close();*/
 
             ImageView imageView = (ImageView) findViewById(R.id.imageView);
-            Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
-
-            imageView.setImageBitmap(applyFilter(FILTER_INVERT, bitmap));
-            saveFilter(picturePath, bitmap);
+            //Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
+            String path = getRealPathFromURI(this, selectedImage);
+            Bitmap unfiltered = doGreyscale(BitmapFactory.decodeFile(path));
+            //Bitmap filteredBM = applyFilter(FILTER_SEPIA, unfiltered);
+            //imageView.setImageBitmap(applyFilter(FILTER_SEPIA, filteredBM));
+            //applyFilter(FILTER_SEPIA, unfiltered);
+            saveFile(selectedImage, unfiltered);
+            //imageView.setImageBitmap(applyFilter(FILTER_INVERT, bitmap));
+            // saveFilter(picturePath, bitmap);
             // Since we now have an image, can apply a filter to it.
             filterButton.setEnabled(true);
 
         }
     }
+/*
+    private String _getRealPathFromURI(Context context, Uri contentUri) {
+        String[] filePathColumn = { MediaStore.Images.Media.DATA };
+
+        Cursor cursor = context.getContentResolver().query(contentUri,
+                filePathColumn, null, null, null);
+        cursor.moveToFirst();
+
+        int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+        String picturePath = cursor.getString(columnIndex);
+        cursor.close();
+        return picturePath;
+    }*/
+    private String getRealPathFromURI(Context context, Uri contentUri) {
+        Cursor cursor = null;
+        try {
+            String[] proj = { MediaStore.Images.Media.DATA };
+            cursor = context.getContentResolver().query(contentUri,  proj, null, null, null);
+            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+            return cursor.getString(column_index);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
 
     /**
-     * @param path  Path of the image passed
+     * @param uri  Path of the image passed
      * @param bitmap Bitmap that will be saved that has filter applied
      */
-    private static void saveFilter(String path, Bitmap bitmap) {
-        Log.i(TAG, "Path: " + path);
+    private void saveFile(Uri uri, Bitmap bitmap) {
         // Get the base name and extension
-        String[] tokens = path.split("\\.(?=[^\\.]+$)");
-        Log.i(TAG, "Tokens: " + tokens[0]);
+        //Uri selectedImage = data.getData();
+        String imagePath = getRealPathFromURI(this, uri);
+        Log.i(TAG, "SAVE-FILE: " + imagePath);
+        //Bitmap bm = BitmapFactory.decodeFile(imagePath);
+        File file = new File(imagePath);
+        try {
+            FileOutputStream fOut = new FileOutputStream(file);
+
+            bitmap.compress(Bitmap.CompressFormat.PNG, 85, fOut);
+            //image.setImageBitmap(bitmap);
+            fOut.flush();
+            fOut.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
     /**
      *
@@ -123,6 +176,7 @@ public class ImageGallery extends Activity {
      */
     private static Bitmap applyFilter(int id, Bitmap src) {
         FastBitmap img = new FastBitmap(src);
+        img.toRGB();
         // Interface for generic filter
         IBaseInPlace filter = null;
 
@@ -147,8 +201,6 @@ public class ImageGallery extends Activity {
         }
         return img.toBitmap();
     }
-
-
 
     /* Prototype from http://xjaphx.wordpress.com/2011/06/21/image-processing-grayscale-image-on-the-fly
         Need to find a better library, but this is just an example.
