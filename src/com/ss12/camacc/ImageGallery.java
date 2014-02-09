@@ -15,6 +15,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -54,8 +55,8 @@ public class ImageGallery extends Activity {
         imgButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
-            public void onClick(View arg0) {
-                image.setImageResource(R.drawable.action_search);
+            public void onClick(View v) {
+                //image.setImageResource(R.drawable.action_search);
 
                 Intent i = new Intent(
                         Intent.ACTION_PICK,
@@ -66,8 +67,15 @@ public class ImageGallery extends Activity {
 
         });
 
-    }
+        filterButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Add in code to bring up filter results
 
+            }
+        });
+
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -75,6 +83,7 @@ public class ImageGallery extends Activity {
 
         if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && null != data) {
             Uri selectedImage = data.getData();
+            Log.i(TAG, selectedImage.toString());
             String[] filePathColumn = { MediaStore.Images.Media.DATA };
 
             Cursor cursor = getContentResolver().query(selectedImage,
@@ -89,13 +98,23 @@ public class ImageGallery extends Activity {
             Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
 
             imageView.setImageBitmap(applyFilter(FILTER_INVERT, bitmap));
-
+            saveFilter(picturePath, bitmap);
             // Since we now have an image, can apply a filter to it.
-            imgButton.setEnabled(true);
+            filterButton.setEnabled(true);
 
         }
     }
 
+    /**
+     * @param path  Path of the image passed
+     * @param bitmap Bitmap that will be saved that has filter applied
+     */
+    private static void saveFilter(String path, Bitmap bitmap) {
+        Log.i(TAG, "Path: " + path);
+        // Get the base name and extension
+        String[] tokens = path.split("\\.(?=[^\\.]+$)");
+        Log.i(TAG, "Tokens: " + tokens[0]);
+    }
     /**
      *
      * @param   id      desired filter to be applied to a bitmap
@@ -128,6 +147,8 @@ public class ImageGallery extends Activity {
         }
         return img.toBitmap();
     }
+
+
 
     /* Prototype from http://xjaphx.wordpress.com/2011/06/21/image-processing-grayscale-image-on-the-fly
         Need to find a better library, but this is just an example.
