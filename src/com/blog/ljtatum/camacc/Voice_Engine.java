@@ -94,7 +94,10 @@ public class Voice_Engine extends Activity {
         }
     }
 
-
-
-
+    @Override
+    protected void onDestroy() {
+        sr.stopListening();
+        sr.destroy();
+        super.onDestroy();
+    }
 }

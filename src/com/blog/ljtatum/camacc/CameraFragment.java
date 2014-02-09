@@ -37,7 +37,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
 {
     public static String TAG = CameraFragment.class.getSimpleName();
 
-
+    private boolean wrapper = false;
     Camera camera;
     private SurfaceView surfaceView;
     SurfaceHolder surfaceHolder;
@@ -104,11 +104,18 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
 //                    PackageManager pm = getActivity().getPackageManager();
 //                    List<ResolveInfo> activities = pm.queryIntentActivities(new Intent(getActivity(),
 //                            Voice_Engine.class), 0);
-                    Log.i("onDone", "1234");
-                    Intent intent = new Intent(getActivity(),Voice_Engine.class);
-//                        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-//                                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                    startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
+                    Log.i("onDone", "1"+wrapper);
+
+                    if (wrapper)
+                    {
+                        Log.i("onDone", "1"+wrapper);
+
+                        Intent intent = new Intent(getActivity(),Voice_Engine.class);
+    //                        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+    //                                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                        startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
+                        wrapper = false;
+                    }
 //                    if (activities.size() == 0)
 //                    {
 //                        Toast.makeText(getActivity(), "No Voice Recognizer Software Installed",
@@ -121,6 +128,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
 
             textToSpeech.setLanguage(Locale.US);
             map.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "UniqueID");
+            wrapper = true;
             ttsPath(0);
         }
     }
@@ -192,6 +200,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
+            wrapper= true;
             ttsPath(1);
             //camera.startPreview();
         }};
@@ -223,23 +232,28 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
     }
 
 
-    private void speakText(String text) {
-
+    private void speakText(
+                           String text) {
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, map);
+
     }
+
+
 
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == checkData) {
-            if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
-                // success, create the TTS instance
-            }
-            else{
-                Intent installTTSFiles = new Intent(); //missing data, install it
-                installTTSFiles.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
-                startActivity(installTTSFiles);
-            }
+        String reqCode= Integer.toString(requestCode);
+        Log.i("onDone","2");
+//        if (requestCode == checkData) {
+//            if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
+//                // success, create the TTS instance
+//            }
+//            else{
+//                Intent installTTSFiles = new Intent(); //missing data, install it
+//                installTTSFiles.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+//                startActivity(installTTSFiles);
+//            }
 
             if (requestCode == VOICE_RECOGNITION_REQUEST_CODE  )
             {
@@ -256,7 +270,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
                     camera.takePicture(myShutterCallback,
                             myPictureCallback_RAW, myPictureCallback_JPG);
                     camera.startPreview();
-                    ttsPath(1);
+                    wrapper = false;
                 }
                 else if (matches.contains("Start Face Recognition")||matches.contains("Start")
                     ||matches.contains("Face")||matches.contains("Recognition")||matches.contains("face recognition"))
@@ -267,7 +281,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
                 }
             }
         }
-    }
+
 
 
 
@@ -367,16 +381,16 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
         @Override
         public void onFaceDetection(Face[] faces, Camera camera) {
             // TODO Auto-generated method stub
-            Log.e(TAG, "face: " + faces.length + " deviceSpeak " + deviceSpeak);
+//            Log.e(TAG, "face: " + faces.length + " deviceSpeak " + deviceSpeak);
 
             if (deviceSpeak != true) {
                 if (faces.length == 0) {
-                    Log.e(TAG, "faces detected: " + faces.length
-                            + " Max Num Detected Faces: ");
+//                    Log.e(TAG, "faces detected: " + faces.length
+//                            + " Max Num Detected Faces: ");
                 } else {
-                    Log.e(TAG, "faces detected: " + faces.length
-                            + " Max Num Detected Faces: "
-                            + camera.getParameters().getMaxNumDetectedFaces());
+//                    Log.e(TAG, "faces detected: " + faces.length
+//                            + " Max Num Detected Faces: "
+//                            + camera.getParameters().getMaxNumDetectedFaces());
 
                 }
             }
@@ -387,12 +401,20 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
 
     }
 
+//    @Override
+//    public void onPause() {
+//        if (textToSpeech != null) {
+//            textToSpeech.stop();
+//            textToSpeech.shutdown();
+//        }
+//        super.onPause();
+//    }
     @Override
-    public void onPause() {
+    public void onDestroy(){
         if (textToSpeech != null) {
             textToSpeech.stop();
             textToSpeech.shutdown();
         }
-        super.onPause();
+        super.onDestroy();
     }
 }
