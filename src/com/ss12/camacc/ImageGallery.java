@@ -12,8 +12,15 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
 import android.graphics.Color;
+import android.media.effect.Effect;
+import android.media.effect.EffectContext;
+import android.media.effect.EffectFactory;
 import android.net.Uri;
+import android.opengl.GLES20;
+import android.opengl.GLSurfaceView;
+import android.opengl.GLUtils;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -38,6 +45,16 @@ public class ImageGallery extends Activity {
     private static final int FILTER_EMBOSS = 3;
     private static final int FILTER_INVERT = 4;
 
+    // GL STUFF
+    private int[] mTextures = new int[2];
+    private EffectContext mEffectContext;
+    private Effect mEffect;
+    private TextureRenderer mTexRenderer = new TextureRenderer();
+    private int mImageWidth;
+    private int mImageHeight;
+    private boolean mInitialized = false;
+    int mCurrentEffect;
+
     Button imgButton, filterButton;
     ImageView image;
 
@@ -45,6 +62,8 @@ public class ImageGallery extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+
+        //mCurrentEffect = R.id.none;
 
         addListenerOnButton();
 
@@ -99,15 +118,17 @@ public class ImageGallery extends Activity {
             int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
             String picturePath = cursor.getString(columnIndex);
             cursor.close();*/
-
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inSampleSize = 2;
+            //options.inJustDecodeBounds = true;
             ImageView imageView = (ImageView) findViewById(R.id.imageView);
             //Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
             String path = getRealPathFromURI(this, selectedImage);
-            Bitmap unfiltered = doGreyscale(BitmapFactory.decodeFile(path));
-            //Bitmap filteredBM = applyFilter(FILTER_SEPIA, unfiltered);
+            Bitmap unfiltered = BitmapFactory.decodeFile(path, options);
+            Bitmap filteredBM = applyFilter(FILTER_SEPIA, unfiltered);
             //imageView.setImageBitmap(applyFilter(FILTER_SEPIA, filteredBM));
             //applyFilter(FILTER_SEPIA, unfiltered);
-            saveFile(selectedImage, unfiltered);
+            saveFile(selectedImage, filteredBM);
             //imageView.setImageBitmap(applyFilter(FILTER_INVERT, bitmap));
             // saveFilter(picturePath, bitmap);
             // Since we now have an image, can apply a filter to it.
@@ -151,7 +172,7 @@ public class ImageGallery extends Activity {
         // Get the base name and extension
         //Uri selectedImage = data.getData();
         String imagePath = getRealPathFromURI(this, uri);
-        Log.i(TAG, "SAVE-FILE: " + imagePath);
+        //Log.i(TAG, "SAVE-FILE: " + imagePath);
         //Bitmap bm = BitmapFactory.decodeFile(imagePath);
         File file = new File(imagePath);
         try {
@@ -175,6 +196,7 @@ public class ImageGallery extends Activity {
      * @return          src bitmap with filter applied
      */
     private static Bitmap applyFilter(int id, Bitmap src) {
+        //src.prepareToDraw();
         FastBitmap img = new FastBitmap(src);
         img.toRGB();
         // Interface for generic filter
@@ -242,6 +264,195 @@ public class ImageGallery extends Activity {
         return bmOut;
     }
 
+    /* NEW GL STUFF
+    private void loadTextures() {
+        // Generate textures
+        GLES20.glGenTextures(2, mTextures, 0);
+
+        // Load input bitmap
+       // Bitmap bitmap = BitmapFactory.decodeResource(getResources(),
+       //         R.drawable.puppy );
+        mImageWidth = bitmap.getWidth();
+        mImageHeight = bitmap.getHeight();
+        mTexRenderer.updateTextureSize(mImageWidth, mImageHeight);
+
+        // Upload to texture
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextures[0]);
+        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
+
+        // Set texture parameters
+        GLToolbox.initTexParams();
+    }
+
+    private void initEffect() {
+        EffectFactory effectFactory = mEffectContext.getFactory();
+        if (mEffect != null) {
+            mEffect.release();
+        }
+
+        mEffect = effectFactory.createEffect(
+                EffectFactory.EFFECT_SEPIA);
+        /**
+         * Initialize the correct effect based on the selected menu/action item
+         */
+        /*
+        switch (mCurrentEffect) {
+
+            case R.id.none:
+                break;
+
+            case R.id.autofix:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_AUTOFIX);
+                mEffect.setParameter("scale", 0.5f);
+                break;
+
+            case R.id.bw:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_BLACKWHITE);
+                mEffect.setParameter("black", .1f);
+                mEffect.setParameter("white", .7f);
+                break;
+
+            case R.id.brightness:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_BRIGHTNESS);
+                mEffect.setParameter("brightness", 2.0f);
+                break;
+
+            case R.id.contrast:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_CONTRAST);
+                mEffect.setParameter("contrast", 1.4f);
+                break;
+
+            case R.id.crossprocess:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_CROSSPROCESS);
+                break;
+
+            case R.id.documentary:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_DOCUMENTARY);
+                break;
+
+            case R.id.duotone:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_DUOTONE);
+                mEffect.setParameter("first_color", Color.YELLOW);
+                mEffect.setParameter("second_color", Color.DKGRAY);
+                break;
+
+            case R.id.filllight:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_FILLLIGHT);
+                mEffect.setParameter("strength", .8f);
+                break;
+
+            case R.id.fisheye:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_FISHEYE);
+                mEffect.setParameter("scale", .5f);
+                break;
+
+            case R.id.flipvert:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_FLIP);
+                mEffect.setParameter("vertical", true);
+                break;
+
+            case R.id.fliphor:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_FLIP);
+                mEffect.setParameter("horizontal", true);
+                break;
+
+            case R.id.grain:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_GRAIN);
+                mEffect.setParameter("strength", 1.0f);
+                break;
+
+            case R.id.grayscale:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_GRAYSCALE);
+                break;
+
+            case R.id.lomoish:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_LOMOISH);
+                break;
+
+            case R.id.negative:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_NEGATIVE);
+                break;
+
+            case R.id.posterize:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_POSTERIZE);
+                break;
+
+            case R.id.rotate:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_ROTATE);
+                mEffect.setParameter("angle", 180);
+                break;
+
+            case R.id.saturate:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_SATURATE);
+                mEffect.setParameter("scale", .5f);
+                break;
+
+            case R.id.sepia:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_SEPIA);
+                break;
+
+            case R.id.sharpen:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_SHARPEN);
+                break;
+
+            case R.id.temperature:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_TEMPERATURE);
+                mEffect.setParameter("scale", .9f);
+                break;
+
+            case R.id.tint:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_TINT);
+                mEffect.setParameter("tint", Color.MAGENTA);
+                break;
+
+            case R.id.vignette:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_VIGNETTE);
+                mEffect.setParameter("scale", .5f);
+                break;
+
+            default:
+                break;
+
+        }
+    }
+
+    private void applyEffect() {
+        mEffect.apply(mTextures[0], mImageWidth, mImageHeight, mTextures[1]);
+    }
+
+    private void renderResult() {
+        if (mCurrentEffect != R.id.none) {
+            // if no effect is chosen, just render the original bitmap
+            mTexRenderer.renderTexture(mTextures[1]);
+        }
+        else {
+            // render the result of applyEffect()
+            mTexRenderer.renderTexture(mTextures[0]);
+        }
+    }*/
 
 
 }
