@@ -13,6 +13,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -20,24 +21,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class ImageFilter {
-    private static final String TAG = "FilterActivity";
-
-    private static final int RESULT_LOAD_IMAGE = 1;
+    private static final String TAG = "ImageFilter";
 
     // Image Filters
-    private static final int FILTER_NONE      = 0;
-    private static final int FILTER_SEPIA     = 1;
-    private static final int FILTER_GRAYSCALE = 2;
-    private static final int FILTER_EMBOSS    = 3;
-    private static final int FILTER_INVERT    = 4;
+    public static final int FILTER_NONE      = 0;
+    public static final int FILTER_SEPIA     = 1;
+    public static final int FILTER_GRAYSCALE = 2;
+    public static final int FILTER_EMBOSS    = 3;
+    public static final int FILTER_INVERT    = 4;
 
     public ImageFilter(){}
 
     /**
      *
-     * @param context
-     * @param uri
-     * @param filter
+     * @param context   Context for function
+     * @param uri       Uri that will be filtered, and saved to same location
+     * @param filter    Type of filter
      */
     public void applyAndSave(Context context, Uri uri, int filter) {
         // BitmapFactory options
@@ -54,9 +53,9 @@ public class ImageFilter {
      *
      * @param context    Context
      * @param contentUri Uri for the desired path
-     * @return Full path of the given Uri
+     * @return           Full path of the given Uri
      */
-    private String getRealPathFromURI(Context context, Uri contentUri) {
+    public String getRealPathFromURI(Context context, Uri contentUri) {
         Cursor cursor = null;
         try {
             String[] proj = { MediaStore.Images.Media.DATA };
@@ -72,18 +71,17 @@ public class ImageFilter {
     }
 
     /**
-     * @param context
-     * @param uri  Path of the image passed
-     * @param bitmap Bitmap that will be saved that has filter applied
+     * @param context   Current context
+     * @param uri       Path of the image passed
+     * @param bitmap    Bitmap that will be saved that has filter applied
      */
-    private void saveFile(Context context, Uri uri, Bitmap bitmap) {
+    public void saveFile(Context context, Uri uri, Bitmap bitmap) {
         String imagePath = getRealPathFromURI(context, uri);
         File file = new File(imagePath);
         try {
             FileOutputStream fOut = new FileOutputStream(file);
 
             bitmap.compress(Bitmap.CompressFormat.PNG, 85, fOut);
-            //image.setImageBitmap(bitmap);
             fOut.flush();
             fOut.close();
         } catch (FileNotFoundException e) {
@@ -99,7 +97,7 @@ public class ImageFilter {
      * @param   src     bitmap source image to be filtered
      * @return          src bitmap with filter applied
      */
-    private static Bitmap applyFilter(int id, Bitmap src) {
+    public static Bitmap applyFilter(int id, Bitmap src) {
         FastBitmap img = new FastBitmap(src);
         img.toRGB();
         // Interface for generic filter
