@@ -1,4 +1,4 @@
-package com.blog.ljtatum.camacc;
+package com.ss12.camacc;
 
 import android.os.Bundle;
 import android.app.Activity;

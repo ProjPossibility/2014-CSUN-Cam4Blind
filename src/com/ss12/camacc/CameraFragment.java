@@ -1,4 +1,4 @@
-package com.blog.ljtatum.camacc;
+package com.ss12.camacc;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

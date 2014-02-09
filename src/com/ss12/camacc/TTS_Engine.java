@@ -1,4 +1,4 @@
-package com.blog.ljtatum.camacc;
+package com.ss12.camacc;
 
 import android.speech.tts.UtteranceProgressListener;
 import android.app.Activity;
