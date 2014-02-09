@@ -77,11 +77,7 @@ public class ImageFilter {
      * @param bitmap Bitmap that will be saved that has filter applied
      */
     private void saveFile(Context context, Uri uri, Bitmap bitmap) {
-        // Get the base name and extension
-        //Uri selectedImage = data.getData();
         String imagePath = getRealPathFromURI(context, uri);
-        //Log.i(TAG, "SAVE-FILE: " + imagePath);
-        //Bitmap bm = BitmapFactory.decodeFile(imagePath);
         File file = new File(imagePath);
         try {
             FileOutputStream fOut = new FileOutputStream(file);
