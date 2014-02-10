@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 
+import android.graphics.Rect;
 import com.example.navigationdrawer.R;
 
 import android.app.Fragment;
@@ -200,9 +201,13 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
+            while(textToSpeech.isSpeaking()) {
+                textToSpeech.stop();
+            }
             wrapper= true;
+
             ttsPath(1);
-            //camera.startPreview();
+            camera.stopFaceDetection();
         }};
 
     private void ttsPath(int id)
@@ -221,7 +226,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
                     metaString = "Your photo has been Saved. " +
                             "Would you like to filter, Say Filter.  " +
                             "Would you like to Share, Say Share." +
-                            "Or take another picture, Say Picture.";
+                            "Or take another picture, Say Picture or Face Detection";
                     speakText(metaString);
 
                     break;
@@ -234,6 +239,9 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
 
     private void speakText(
                            String text) {
+        if(textToSpeech.isSpeaking()) {
+            return;
+        }
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, map);
 
     }
@@ -275,8 +283,10 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
                 else if (matches.contains("Start Face Recognition")||matches.contains("Start")
                     ||matches.contains("Face")||matches.contains("Recognition")||matches.contains("face recognition"))
                 {
-                    ttsPath(2);
+//                    ttsPath(2);
+                    Log.i("FACE", "FACE");
 
+                    camera.startFaceDetection();
 
                 }
             }
@@ -312,7 +322,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
 				 * a picture */
                 camera.startPreview();
                 camera.setFaceDetectionListener(new Speach());
-                camera.startFaceDetection();
+
                 previewing = true;
             }
             catch (IOException e)
@@ -380,26 +390,62 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
 
         @Override
         public void onFaceDetection(Face[] faces, Camera camera) {
-            // TODO Auto-generated method stub
-//            Log.e(TAG, "face: " + faces.length + " deviceSpeak " + deviceSpeak);
 
-            if (deviceSpeak != true) {
-                if (faces.length == 0) {
-//                    Log.e(TAG, "faces detected: " + faces.length
-//                            + " Max Num Detected Faces: ");
-                } else {
-//                    Log.e(TAG, "faces detected: " + faces.length
-//                            + " Max Num Detected Faces: "
-//                            + camera.getParameters().getMaxNumDetectedFaces());
+            Log.e(TAG, "faces detected: " + faces.length);
 
-                }
+            //no faces detected
+            boolean twoReady= false;
+            if (faces.length == 0)
+            {
+
+                Log.e(TAG, "faces detected: " + faces.length
+                        + " Max Num Detected Faces: "
+                        + camera.getParameters().getMaxNumDetectedFaces());
             }
+            else if(faces.length==1)
+            {
+                int vWidth = surfaceView.getWidth();
+                int vHeight = surfaceView.getHeight();
+                int l = faces[0].rect.left;
+                int t = faces[0].rect.top;
+                int r = faces[0].rect.right;
+                int b = faces[0].rect.bottom;
+                int left = (l+1000) * vWidth/2000;
+                int top  = (t+1000) * vHeight/2000;
+                int right = (r+1000) * vWidth/2000;
+                int bottom = (b+1000) * vHeight/2000;
 
+                Rect realFaceRect = new Rect(left, top, right, bottom);
 
+                int halfWidth = surfaceView.getRight() / 2;
+                int halfHeight = surfaceView.getBottom() / 2;
+                Rect middle= new Rect(halfWidth - 50, halfHeight - 50, halfWidth + 50, halfHeight + 50);
+                if(middle.intersect(realFaceRect))
+                {
+                    speakText("one face Centered detected");
+                    Log.e(TAG, "people detected:1");
+                }
 
+                Log.e(TAG, "people detected:1"+realFaceRect.toString());
+                speakText("face detected not centered ");
+            }//else if
+            else if(faces.length==2)
+            {
+                //forms a square that covers the right part of the screen
+                Rect side = new Rect(-1000,-1000,100,200);
+//                if((side.contains(faces[1].rect))&&(side.contains(faces[0].rect)==false))
+//                {
+                    //outputs if the person on the right is ready
+                    // if this is false then the two people are on the left
+                speakText("two people detected");
+                Log.e(TAG, "people detected:2"+faces[0].rect.toString());
+
+//                }
+            }
         }
 
     }
+
 
 //    @Override
 //    public void onPause() {
