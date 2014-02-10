@@ -68,10 +68,9 @@ public class Voice_Engine extends Activity {
         public void onError(int error)
         {
             Log.d(TAG, "onError " + error);
-
-            Intent i = new Intent();
-            setResult( RESULT_CANCELED , i);
-            finish();
+            sr.cancel();
+            Intent intent = new Intent();
+            sr.startListening(intent);
         }
         public void onResults(Bundle results)
         {

@@ -224,9 +224,10 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
                     deviceSpeak = true;
                     surfaceView.setEnabled(false); //disable taking pics without command
                     metaString = "Your photo has been Saved. " +
-                            "Would you like to filter, Say Filter.  " +
-                            "Would you like to Share, Say Share." +
-                            "Or take another picture, Say Picture or Face Detection";
+                            //"Would you like to filter, Say Filter.  " +
+                            //"Would you like to Share, Say Share." +
+                            "If you like to take another picture, Say Picture or" +
+                            "say face detection to start face detection";
                     speakText(metaString);
 
                     break;
@@ -281,7 +282,8 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
                     wrapper = false;
                 }
                 else if (matches.contains("Start Face Recognition")||matches.contains("Start")
-                    ||matches.contains("Face")||matches.contains("Recognition")||matches.contains("face recognition"))
+                    ||matches.contains("Face")||matches.contains("Recognition")||matches.contains("face recognition")
+                        ||matches.contains("Detection"))
                 {
 //                    ttsPath(2);
                     Log.i("FACE", "FACE");
@@ -441,6 +443,9 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
                 Log.e(TAG, "people detected:2"+faces[0].rect.toString());
 
 //                }
+            }
+            else if(faces.length>=3) {
+                speakText("Multiple people in picture");
             }
         }
 
