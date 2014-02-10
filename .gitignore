@@ -23,7 +23,8 @@ local.properties
 proguard/
 
 # Idea specific files
-*.idea/
+.idea/
+.settings/
 workspace.xml
 task.xml
 *.iws
