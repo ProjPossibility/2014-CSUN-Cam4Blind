@@ -20,6 +20,11 @@ public class Voice_Engine extends Activity {
     private SpeechRecognizer sr;
     private static final String TAG = "Voice_Engine_Class";
 
+    /**
+     *
+     *
+     * @param savedInstanceState
+     */
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
@@ -43,28 +48,58 @@ public class Voice_Engine extends Activity {
 
     }
 
+    /**
+     *
+     */
     class listener implements RecognitionListener
     {
+        /**
+         *
+         * @param params
+         */
         public void onReadyForSpeech(Bundle params)
         {
             Log.d(TAG, "onReadyForSpeech");
         }
+
+        /**
+         *
+         */
         public void onBeginningOfSpeech()
         {
             Log.d(TAG, "onBeginningOfSpeech");
         }
+
+        /**
+         *
+         * @param rmsdB
+         */
         public void onRmsChanged(float rmsdB)
         {
             Log.d(TAG, "onRmsChanged");
         }
+
+        /**
+         *
+         * @param buffer
+         */
         public void onBufferReceived(byte[] buffer)
         {
             Log.d(TAG, "onBufferReceived");
         }
+
+        /**
+         *
+         */
         public void onEndOfSpeech()
         {
             Log.d(TAG, "onEndofSpeech");
         }
+
+        /**
+         *
+         * @param error
+         */
         public void onError(int error)
         {
             Log.d(TAG, "onError " + error);
@@ -72,6 +107,11 @@ public class Voice_Engine extends Activity {
             Intent intent = new Intent();
             sr.startListening(intent);
         }
+
+        /**
+         *
+         * @param results
+         */
         public void onResults(Bundle results)
         {
             String str = new String();
@@ -83,16 +123,30 @@ public class Voice_Engine extends Activity {
             finish();
 
         }
+
+        /**
+         *
+         * @param partialResults
+         */
         public void onPartialResults(Bundle partialResults)
         {
             Log.d(TAG, "onPartialResults");
         }
+
+        /**
+         *
+         * @param eventType
+         * @param params
+         */
         public void onEvent(int eventType, Bundle params)
         {
             Log.d(TAG, "onEvent " + eventType);
         }
     }
 
+    /**
+     *
+     */
     @Override
     protected void onDestroy() {
         sr.stopListening();

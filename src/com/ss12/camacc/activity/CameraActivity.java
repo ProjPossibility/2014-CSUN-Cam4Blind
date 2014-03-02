@@ -34,6 +34,9 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Toast;
 
+/**
+ *
+ */
 public class CameraActivity extends Activity implements SurfaceHolder.Callback, OnInitListener
 {
     public static String TAG = CameraActivity.class.getSimpleName();
@@ -62,6 +65,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     HashMap<String, String> map = new HashMap<String, String>();
     //private Progress_Listener pL;
 
+    /**
+     *
+     * @param savedInstanceState
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,6 +94,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
     } //end onCreate
 
+    /**
+     *
+     * @param status
+     */
     @Override
     public void onInit(int status)
     {
@@ -220,6 +231,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             camera.stopFaceDetection();
         }};
 
+    /**
+     *
+     * @param id
+     */
     private void ttsPath(int id)
     {
 
@@ -257,7 +272,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         }
     }
 
-
+    /**
+     *
+     * @param text
+     */
     private void speakText(
                            String text) {
         if(textToSpeech.isSpeaking()) {
@@ -268,8 +286,12 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     }
 
 
-
-
+    /**
+     *
+     * @param requestCode
+     * @param resultCode
+     * @param data
+     */
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         String reqCode= Integer.toString(requestCode);
@@ -331,6 +353,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             }
         }
 
+
+    /**
+     *
+     * @param holder
+     * @param format
+     * @param width
+     * @param height
+     */
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width,
                                int height)
@@ -367,6 +397,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         }
     }
 
+    /**
+     *
+     * @param holder
+     */
     @Override
     public void surfaceCreated(SurfaceHolder holder)
     {
@@ -390,6 +424,13 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                 + " surfaceView.getRight "  + surfaceView.getRight());
     }
 
+    /**
+     *
+     * @param width
+     * @param height
+     * @param parameters
+     * @return
+     */
     private Camera.Size getBestPreviewSize(int width, int height,
                                            Camera.Parameters parameters) {
         Camera.Size result = null;
@@ -414,7 +455,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     }
 
 
-
+    /**
+     *
+     * @param holder
+     */
     @Override
     public void surfaceDestroyed(SurfaceHolder holder)
     {
@@ -428,8 +472,21 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         previewing = false;
     }
 
+    /**
+     *
+     */
     class Speech implements Camera.FaceDetectionListener {
-
+        /**
+         * Detects faces in the Camera view according to FaceDetectionListener.
+         * All faces detected will be stored into a Face array to be passed to
+         * be processed by this method. For one face it will detect if the face
+         * is centered. For two faces detects centered if neither face is in the
+         * center of the screen. For three or more faces it says multiple faces
+         * detected.
+         * @param faces   the number of faces detected by Camera.FaceDetectionListener
+         * @param camera  not used. Exists for overriding onFaceDetection from
+         *                FaceDetectionListener
+         */
         @Override
         public void onFaceDetection(Face[] faces, Camera camera) {
 
@@ -485,7 +542,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 //                }
             }
             else if(faces.length>=3) {
-                speakText("Multiple people in picture");
+                speakText("Multiple people detected");
             }
         }
 
@@ -500,6 +557,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 //        }
 //        super.onPause();
 //    }
+
+    /**
+     *
+     */
     @Override
     public void onDestroy(){
         if (textToSpeech != null) {
