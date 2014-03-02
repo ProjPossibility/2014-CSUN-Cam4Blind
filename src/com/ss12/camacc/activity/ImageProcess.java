@@ -40,6 +40,9 @@ public class ImageProcess {
     public static final int FILTER_EMBOSS    = 3;
     public static final int FILTER_INVERT    = 4;
 
+    /**
+     *
+     */
     public ImageProcess(){}
 
     /**
