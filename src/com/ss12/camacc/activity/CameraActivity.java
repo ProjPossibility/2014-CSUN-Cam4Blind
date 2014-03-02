@@ -46,7 +46,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     private Uri lastPictureTakenUri;
     private boolean filterWrapper;
 
-    
+
     Camera camera;
     private Size size;
     private SurfaceView surfaceView;
@@ -55,20 +55,20 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     private String stringId;
     String metaString;
     TextToSpeech textToSpeech;
-    
+
     private int checkData = 0;
     private static final int VOICE_RECOGNITION_REQUEST_CODE = 1234;
-    
+
     HashMap<String, String> map = new HashMap<String, String>();
     //private Progress_Listener pL;
-    
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
         Log.d(TAG, "Main layout loaded successfully");
-        
+
         surfaceView = (SurfaceView) findViewById(R.id.camera_preview);
         surfaceView.setOnClickListener(new SurfaceView.OnClickListener() {
 
@@ -83,7 +83,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
         configureSurface();
 
-        textToSpeech = new TextToSpeech(CameraActivity.this, this);  
+        textToSpeech = new TextToSpeech(CameraActivity.this, this);
 
     } //end onCreate
 
@@ -330,7 +330,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                 Log.i("STEFAN", matches.toString());
             }
         }
-    
+
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width,
                                int height)
@@ -370,9 +370,17 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     @Override
     public void surfaceCreated(SurfaceHolder holder)
     {
+
+
         camera = Camera.open();
 
         Camera.Parameters parameter = camera.getParameters();
+
+	if(parameter.getSupportedFlashModes().contains(Camera.Parameters.FLASH_MODE_AUTO)){
+	    parameter.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
+	    camera.setParameters(parameter);
+	}
+
         Camera.Size size = getBestPreviewSize(surfaceView.getWidth(), surfaceView.getHeight(), parameter);
         parameter.setPreviewSize(size.width, size.height);
         surfaceView.getTop();
