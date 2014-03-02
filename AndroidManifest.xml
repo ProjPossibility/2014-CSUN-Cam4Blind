@@ -30,7 +30,7 @@
             </intent-filter>
         </activity>
         <activity
-                android:name="com.ss12.camacc.activity.Voice_Engine"
+                android:name="com.ss12.camacc.service.Voice_Engine"
                 android:label=""
                 android:excludeFromRecents="true"
                 android:screenOrientation="portrait"
