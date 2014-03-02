@@ -44,6 +44,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     private boolean wrapper = false;
     boolean previewing = false;
     boolean deviceSpeak = false;
+
+
+    private Uri lastPictureTakenUri;
+    private boolean filterWrapper;
+
     
     Camera camera;
     private Size size;
@@ -128,6 +133,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     //                                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
                         startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
                         wrapper = false;
+
+                    }
+                    if (filterWrapper) {
+
                     }
 //                    if (activities.size() == 0)
 //                    {
@@ -192,18 +201,18 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             // TODO Auto-generated method stub
 
             Log.i(TAG, "TAKING PICTURE");
-            Uri uriTarget = CameraActivity.this.getContentResolver().
+            lastPictureTakenUri = CameraActivity.this.getContentResolver().
                     insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new ContentValues());
-            Log.i(TAG, "uriTarget " + uriTarget.toString());
+            Log.i(TAG, "uriTarget " + lastPictureTakenUri.toString());
             OutputStream imageFileOS;
             try {
-                imageFileOS = CameraActivity.this.getContentResolver().openOutputStream(uriTarget);
+                imageFileOS = CameraActivity.this.getContentResolver().openOutputStream(lastPictureTakenUri);
                 imageFileOS.write(arg0);
                 imageFileOS.flush();
                 imageFileOS.close();
 
                 Toast.makeText(CameraActivity.this,
-                        "Image saved: " + uriTarget.toString(),
+                        "Image saved: " + lastPictureTakenUri.toString(),
                         Toast.LENGTH_SHORT).show();
 
             } catch (FileNotFoundException e) {
@@ -243,12 +252,22 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                             //"Would you like to filter, Say Filter.  " +
                             //"Would you like to Share, Say Share." +
                             "If you like to take another picture, Say Picture or" +
-                            "say face detection to start face detection";
+                            "say face detection to start face detection" +
+                            " or say filter to apply a filter";
                     speakText(metaString);
 
                     break;
             }
-            case 2:
+            case 2:{
+                deviceSpeak = true;
+                surfaceView.setEnabled(false); //disable taking pics without command
+                metaString = "What filter would you like to apply" +
+                        "Sepia";
+
+                speakText(metaString);
+
+                break;
+            }
 
         }
     }
@@ -314,6 +333,23 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                     camera.startFaceDetection();
 
                 }
+                else if (matches.contains("Apply Filter") ||
+                        matches.contains("filter"))
+                {
+                    wrapper = true;
+                    ttsPath(2);
+                }
+                else if (matches.contains("sepia") || matches.contains("yellow"))
+                {
+                    Log.i("STEFAN", "In sepia");
+                    ImageProcess imageProcess = new ImageProcess();
+                    imageProcess.applyAndSave(this, lastPictureTakenUri, ImageProcess.FILTER_SEPIA);
+                    Log.i("STEFAN", "Image saved to " + imageProcess.getRealPathFromURI(this, lastPictureTakenUri));
+                    camera.stopPreview();
+                    previewing = false;
+                    ttsPath(0);
+                }
+                Log.i("STEFAN", matches.toString());
             }
         }
 
