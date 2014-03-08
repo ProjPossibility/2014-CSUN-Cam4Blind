@@ -35,41 +35,79 @@ import java.util.List;
  * ImageProcess is the functionality for filtering and processing images.
  * Includes features to manage the saving and bitmap processing. Also
  * has the ability to share photos via a share intent.
+ *
+ * @author Leonard Tatum
+ * @author Noah Anderson
+ * @author Stefan Eng
+ * @author Javier Pimentel
+ * @author Kristoffer Larson
+ *
  */
 public class ImageProcess {
 	
-	public static String TAG = ImageProcess.class.getSimpleName();
-
-    // Image Filters
+	//public static String TAG = ImageProcess.class.getSimpleName();
+    /**
+     * A tag for no filter
+     */
     public static final int FILTER_NONE      = 0;
+    /**
+     * A tag for the Sepia filter
+     */
     public static final int FILTER_SEPIA     = 1;
+    /**
+     * A tag for the Gray Scale filter
+     */
     public static final int FILTER_GRAYSCALE = 2;
+    /**
+     * A tag for the Emboss filter
+     */
     public static final int FILTER_EMBOSS    = 3;
+    /**
+     * A tag for the Invert filter
+     */
     public static final int FILTER_INVERT    = 4;
+    /**
+     * A tag for the Blur filter
+     */
     public static final int FILTER_BLUR		 = 5;
+    /**
+     * A tag for the Sharpen filter
+     */
     public static final int FILTER_SHARPEN   = 6;
+    /**
+     * A tag for the Morph filter
+     */
     public static final int FILTER_MORPH     = 7;
+    /**
+     * A tag for the Brightness filter
+     */
     public static final int FILTER_BRIGHTNESS= 8;
+    /**
+     * A tag for the Gaussian filter
+     */
     public static final int FILTER_GAUSSIAN  = 9;
 
     private static String filterStr;
-    public static Uri filterUri;
+    //public static Uri filterUri;
     
     /**
-     *
+     * Blank constructor. Used by other classes for referencing the methods
+     * it contains.
      */
     public ImageProcess(){}
 
     /**
+     * Prompts user for desired filter choice then applies it to the image.
+     * The image is then saved to the Android photo gallery.
      *
      * @param context   Context for function
      * @param uri       Uri that will be filtered, and saved to same location
      * @param filter    Type of filter
      */
     public void applyAndSave(Context context, Uri uri, int filter) {
-    	Log.d(TAG, "applyAndSave() ::" + "\ncontext: " + context + 
-    			"\nuri: " + uri + 
-    			"\nfilter: " + filter);
+    	//Log.d(TAG, "applyAndSave() ::" + "\ncontext: " + context +
+    	//		"\nuri: " + uri +
+    	//		"\nfilter: " + filter);
     	
         // BitmapFactory options
         Options options = new Options();
@@ -77,34 +115,36 @@ public class ImageProcess {
         
         String path = uri.toString();
         //String path = CameraActivity.getLastPictureTakenUri().toString();
-        File file = new File(path);
-        Log.i(TAG, "applyAndSave() ::" + "\npath: " + path + 
-        		"\nfile: " + file);
+        //File file = new File(path);
+        //Log.i(TAG, "applyAndSave() ::" + "\npath: " + path +
+        //		"\nfile: " + file);
 
         try {
         	/* decode the file path into a bitmap. If the specified file name
              * is null, or cannot be decoded into a bitmap, the function returns 
              * null */
         	Bitmap unfiltered = BitmapFactory.decodeFile(path, options);
-        	Log.d(TAG, "applyAndSave() ::" + "\nunfiltered: " + unfiltered);
+        	//Log.d(TAG, "applyAndSave() ::" + "\nunfiltered: " + unfiltered);
         	Bitmap filteredBitmap = applyFilter(filter, unfiltered);
-        	Log.d(TAG, "applyAndSave() ::" + "\nfilteredBitmap: " + filteredBitmap);
+        	//Log.d(TAG, "applyAndSave() ::" + "\nfilteredBitmap: " + filteredBitmap);
         	saveFile(context, uri, filteredBitmap);
         } catch (Exception e) {
-        	Log.e(TAG, "Failure to decode Bitmap");
+        	//Log.e(TAG, "Failure to decode Bitmap");
         	e.printStackTrace();
         }
     }
   
     /**
+     * Saves image into the Android gallery.
+     *
      * @param context   Current context
      * @param uri       Path of the image passed
      * @param bitmap    Bitmap that will be saved that has filter applied
      */
     public void saveFile(Context context, Uri uri, Bitmap bitmap) {
-    	Log.d(TAG, "saveFile() ::" + 
-    			"\ncontext: " + context + "\nuri: " + uri + 
-    			"\nbitmap: " + bitmap);
+    	//Log.d(TAG, "saveFile() ::" +
+    	//		"\ncontext: " + context + "\nuri: " + uri +
+    	//		"\nbitmap: " + bitmap);
 
     	/* Legend: File name convention
     	 * @filterStr =
@@ -120,13 +160,13 @@ public class ImageProcess {
     	 */
     	
     	String imagePath = filterStr + uri.toString();
-        Log.i(TAG, "saveFile() ::" +
-        		"\nimagePath: " + imagePath + "\nfilterStr: " + filterStr);
+        //Log.i(TAG, "saveFile() ::" +
+        //		"\nimagePath: " + imagePath + "\nfilterStr: " + filterStr);
         
         File file = new File(imagePath);
         //if (file.exists()) file.delete(); //delete old file
         try {
-        	Log.e(TAG, "Saving file in progress");
+        	//Log.e(TAG, "Saving file in progress");
             FileOutputStream fOut = new FileOutputStream(file);
             //bitmap.compress(Bitmap.CompressFormat.PNG, 85, fOut);
             bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fOut);
@@ -140,10 +180,11 @@ public class ImageProcess {
     }
     
     /**
+     * Applies a filter to the source image.
      *
      * @param   id      desired filter to be applied to a bitmap
      * @param   src     bitmap source image to be filtered
-     * @return          src bitmap with filter applied
+     * @return          the src bitmap with filter applied
      */
     public static Bitmap applyFilter(int id, Bitmap src) {
         FastBitmap img = new FastBitmap(src);
@@ -195,7 +236,7 @@ public class ImageProcess {
                 break;
         }
         if(filter != null) {
-        	Log.e(TAG, "Bitmap applyFilter ::" + "\nfilter: " + filter);
+        	//Log.e(TAG, "Bitmap applyFilter ::" + "\nfilter: " + filter);
             filter.applyInPlace(img);
         }
         return img.toBitmap();
@@ -259,4 +300,4 @@ public class ImageProcess {
 //            }
 //        }
 //    }
-}
+}//end ImageProcess class
