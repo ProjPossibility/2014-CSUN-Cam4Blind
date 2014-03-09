@@ -54,55 +54,131 @@ import android.view.Window;
 import android.widget.Toast;
 
 /**
+ * CameraActivity is the main activity for taking pictures and running the
+ * application. It includes features to manage the textToSpeech for the user,
+ * voice options, network connection detection, facial recognition, error
+ * handling, and sending results back to the call location.
  *
+ * @author Leonard Tatum
+ * @author Noah Anderson
+ * @author Stefan Eng
+ * @author Javier Pimentel
+ * @author Kristoffer Larson
  */
 public class CameraActivity extends Activity implements SurfaceHolder.Callback, OnInitListener
 {
     public static String TAG = CameraActivity.class.getSimpleName();
- 
+    /**
+     * A PreferencesHelper object to aid in storing user preferences.
+     */
     private PreferencesHelper prefHelper;
     public Voice_Engine listener = new Voice_Engine();
 
     private boolean ttsWrapper = false; //@true: TTS Engine is active
-    private boolean faceDetectionWrapper = false; //@true: Face Detection mode active
+    /**
+     * A boolean that is set to true when Face Detection mode is active.
+     */
+    private boolean faceDetectionWrapper = false;
+    /**
+     * A boolean that is set to true when a preview is available.
+     */
     private boolean isPreview = false;
+    /**
+     * A boolean that is set to true when there is a stable and active network
+     * connection.
+     */
     private boolean isConnected = false;
+    /**
+     * A boolean that is set to false when a warning when there is an unstable
+     * or non-existent network connection.
+     */
     private boolean isWarningSound;
+    /**
+     * A boolean that is used to control textToSpeech option paths.
+     */
     private boolean isOptionController = false;
+    /**
+     * A boolean that is used for filter application control.
+     */
     private boolean isFilterController = false;
-
+    /**
+     * The Uri of the last picture taken.
+     */
 	public static Uri lastPictureTakenUri;
-
+    /**
+     * TextToSpeech object.
+     */
 	private static TextToSpeech textToSpeech;
+    /**
+     * Camera object.
+     */
     private Camera camera;
     private Size size;
+    /**
+     * SurfaceView object.
+     */
     private SurfaceView surfaceView;
+    /**
+     * SurfaceHolder object.
+     */
     private SurfaceHolder surfaceHolder;
+    /**
+     * AlertDialog object.
+     */
     private AlertDialog alertDialog;
+    /**
+     * Ringtone object.
+     */
     private Ringtone r;
+    /**
+     * Vibrator object.
+     */
     private Vibrator v;
-
+    /**
+     * A String to pass text into the TextToSpeech object.
+     */
     private String metaString;
 
     long timeInMilliseconds;
+    /**
+     * An integer request code for voice recognition
+     */
     private static final int VOICE_RECOGNITION_REQUEST_CODE = 1234;
-
+    /**
+     * A collection that stores utterances.
+     */
     HashMap<String, String> map = new HashMap<String, String>();
+    /**
+     * A Handler object for TextToSpeech engine handling.
+     */
     private Handler mHandler = new Handler();
     
     //shared preference variables
+    /**
+     * A boolean for the first application launch.
+     */
     private boolean isFirstLaunch;
     private String sharedPrefFirstLaunch;
-    
+    /**
+     * A boolean for aiding in application path decisions.
+     */
     private boolean isDescription;
     private String sharedPrefDescription;
-    
+    /**
+     * A boolean to set automatic social media sharing.
+     */
     private boolean isAutoSocial;
     private String sharedPrefAutoSocial;
     
     /**
+     * Checks for a network connection, and initializes the application if
+     * a stable connection exists. Called by the system when the service
+     * is first created. Do not call this method directly.
      *
-     * @param savedInstanceState
+     * @param savedInstanceState If the activity is being re-initialized after
+     *                           previously being shut down then this Bundle
+     *                           contains the data it most recently supplied in
+     *                           onSaveInstanceState(Bundle). Otherwise it is null.
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,10 +192,12 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     } //end onCreate
     
     
-    /* setup the application to do initialization work inside of loadActivity().
+    /**
+     * Setup the application to do initialization work inside of loadActivity().
      * This allows us to 'reload' (restart) this Activity from the beginning
      * during phases of lost network connection(s) and reestablished 
-     * netowrk connection(s) */
+     * network connection(s)
+     */
     private void loadActivity() {
         
         if (isConnected == true) { 
@@ -141,7 +219,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                 	//take picture and store image
                     camera.takePicture(myShutterCallback,
                             myPictureCallback_RAW, myPictureCallback_JPG);
-                }});
+                }});//end setOnClickListener
 
             configureSurface();
 
@@ -155,7 +233,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     		textToSpeech = new TextToSpeech(CameraActivity.this, this);  
 
     		/* This runnable is used to allow TTS Engine to fully initialize. 
-    		 * It takes time for TTS Engine to initialize, and the first initilization
+    		 * It takes time for TTS Engine to initialize, and the first initialization
     		 * is important for the entire application to work. TTS Engine is initialized 
     		 * in onStart() as a backup just in case there is failure here as well */
     		mHandler.postDelayed(new Runnable() {
@@ -182,28 +260,59 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
      * Every time TTS Engine is initialized, onInit procs. We parsed
      * out the work to another method called ttsEngine() so that if
      * initialization fails, or at any other point in the application 
-     * we would like to 
-     * @param status
+     * we would like to.
+     *
+     * @param status SUCCESS or ERROR.
      */
     @Override
     public void onInit(int status) {
     	Log.e(TAG, "ONINIT(): Text-to-speech initialized!");
 
         if (status == TextToSpeech.SUCCESS) {
+            /**
+             * Listener for events relating to the progress of an utterance through the synthesis
+             * queue. Each utterance is associated with a call to speak(String, int, HashMap) or
+             * synthesizeToFile(String, HashMap, String) with an associated utterance identifier,
+             * as per KEY_PARAM_UTTERANCE_ID. The callbacks specified in this method can be called
+             * from multiple threads.
+             */
         	textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-
+                /**
+                 * Called when an utterance "starts" as perceived by the caller. This will be soon
+                 * before audio is played back in the case of a speak(String, int, HashMap) or
+                 * before the first bytes of a file are written to storage in the case of
+                 * synthesizeToFile(String, HashMap, String).
+                 *
+                 * @param utteranceId The utterance ID of the utterance
+                 */
                 @Override
                 public void onStart(String utteranceId) {
                     // TODO Auto-generated method stub
 
-                }
+                }//end onStart
 
+                /**
+                 * Called when an error has occurred during processing. This can be called at
+                 * any point in the synthesis process. Note that there might be calls to
+                 * onStart(String) for specified utteranceId but there will never be a call to
+                 * both onDone(String) and onError(String) for the same utterance.
+                 *
+                 * @param utteranceId The utterance ID of the utterance
+                 */
                 @Override
                 public void onError(String utteranceId) {           	
                     // TODO Auto-generated method stub
 
-                }
+                }//end onError
 
+                /**
+                 * Called when an utterance has successfully completed processing. All audio will
+                 * have been played back by this point for audible output, and all output will
+                 * have been written to disk for file synthesis requests. This request is
+                 * guaranteed to be called after onStart(String).
+                 *
+                 * @param utteranceId The utterance ID of the utterance
+                 */
                 @Override
                 public void onDone(String utteranceId) {
                 	/* before we use Voice_Engine class we always check for 
@@ -220,8 +329,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                 		//confirm network connection
                     	isNetWorkConnection();
                 	}
-                }
-            }); //end OnUtteranceProgressListener()
+                }//end onDone
+            }); //end setOnUtteranceProgressListener()
 
             textToSpeech.setLanguage(Locale.US);
             map.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "UniqueID");
@@ -246,6 +355,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         }
     } //end onInit() method
 
+    /**
+     *
+     */
     private void configureSurface()
     {
         surfaceHolder = surfaceView.getHolder();
@@ -257,33 +369,68 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
          * camera hardware can fill a push buffer directly and die graphics hardware
          * can display a push buffer directly (they share buffers): Deprecated in 3.0 */
         surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-    }
+    }//end configureSurface
 
+    /**
+     * Callback interface used to notify on completion of camera auto focus.
+     * Devices that do not support auto-focus will receive a "fake" callback
+     * to this interface.
+     */
     AutoFocusCallback myAutoFocusCallback = new AutoFocusCallback() {
 
+        /**
+         * Called when the camera auto focus completes.
+         *
+         * @param arg0 True if focus was successful, false if otherwise
+         * @param arg1 The Camera service object
+         */
         @Override
         public void onAutoFocus(boolean arg0, Camera arg1) {
             // TODO Auto-generated method stub
-        }};
+        //end onAutoFocus
+        }};//end myAutoFocusCallback
 
+    /**
+     * Callback interface used to signal the moment of actual image capture.
+     */
     ShutterCallback myShutterCallback = new ShutterCallback(){
 
+        /**
+         * Called as near as possible to the moment when a photo is captured from the sensor.
+         */
         @Override
         public void onShutter() {
             // TODO Auto-generated method stub
-
-        }};
-
+        //end onShutter
+        }};//end myShutterCallback
+    /**
+     * Callback interface used to signal the moment of a RAW image.
+     */
     PictureCallback myPictureCallback_RAW = new PictureCallback(){
 
+        /**
+         * Called when image data is available after a picture is taken.
+         *
+         * @param arg0 A byte array of the picture data
+         * @param arg1 The Camera service object
+         */
         @Override
         public void onPictureTaken(byte[] arg0, Camera arg1) {
             // TODO Auto-generated method stub
+        //end onPictureTaken
+        }};//end myPictureCallback_RAW
 
-        }};
-
+    /**
+     * Callback interface used to signal the moment of a JPG image.
+     */
     PictureCallback myPictureCallback_JPG = new PictureCallback(){
 
+        /**
+         * Called when image data is available after a picture is taken.
+         *
+         * @param arg0 A byte array of the picture data
+         * @param arg1 The Camera service object
+         */
         @Override
         public void onPictureTaken(byte[] arg0, Camera arg1) {
             // TODO Auto-generated method stub
@@ -355,18 +502,25 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             } else {
             	ttsPath(5);
             }
-            
-        }};
-        
+        //end onPictureTaken
+        }};//end myPictureCallback_JPG
+
+    /**
+     * Get the directory of the phone's photo gallery
+     *
+     * @return The file for photos to be saved in
+     */
     private File getDir() {
     	File sdDir = Environment.
     			getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
     	return new File(sdDir, "Camacc");
-    }
+    }//end getDir
           
     /**
+     * Initializes textToSpeech and lays out the available options for the user, as
+     * well as creating a usage path for the user to take.
      *
-     * @param id
+     * @param id The program path that is being taken
      */
     private void ttsPath(final int id)
     {	
@@ -543,11 +697,12 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             VoiceEngineHelper.setVoiceController(false);
             ttsWrapper = false;
     	}
-    }
+    }//end ttsPath
 
     /**
+     * Clears the textToSpeech queue if nothing is being said.
      *
-     * @param text
+     * @param text The text textToSpeech is saying
      */
     private void speakText(String text) {
         if(textToSpeech.isSpeaking()) {
@@ -555,13 +710,19 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         } else {
         	textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, map);
         } 
-    }
+    }//end speakText
 
     /**
+     * Called when an activity you launched exits, giving you the requestCode you started it with,
+     * the resultCode it returned, and any additional data from it. The resultCode will be
+     * RESULT_CANCELED if the activity explicitly returned that, didn't return any result, or
+     * crashed during its operation. This handles user speech commands to the application.
      *
-     * @param requestCode
-     * @param resultCode
-     * @param data
+     * @param requestCode The integer request code originally supplied to startActivityForResult(),
+     *                    allowing you to identify who this result came from
+     * @param resultCode  The integer result code returned by the child activity through its
+     *                    setResult().
+     * @param data        An Intent, which can return result data to the caller.
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -1026,11 +1187,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
 
     /**
+     * This is called immediately after any structural changes
+     * (format or size) have been made to the surface. Resets
+     * the preview of what the camera is looking at.
      *
-     * @param holder
-     * @param format
-     * @param width
-     * @param height
+     * @param holder The SurfaceHolder whose surface has changed
+     * @param format The new PixelFormat of the surface
+     * @param width  The new width of the surface
+     * @param height The new height of the surface
      */
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width,
@@ -1065,11 +1229,13 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                 e.printStackTrace();
             }
         }
-    }
+    }//end surfaceChanged
 
     /**
+     * This is called immediately after the surface is first created.
+     * It previews what the camera is seeing.
      *
-     * @param holder
+     * @param holder The SurfaceHolder whose surface is being created
      */
     @Override
     public void surfaceCreated(SurfaceHolder holder)
@@ -1085,14 +1251,15 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         Camera.Size size = getBestPreviewSize(surfaceView.getWidth(), surfaceView.getHeight(), parameter);
         parameter.setPreviewSize(size.width, size.height);
         surfaceView.getTop();
-    }
+    }//end surfaceCreated
 
     /**
+     * Obtains the best preview size from the camera.
      *
-     * @param width
-     * @param height
-     * @param parameters
-     * @return
+     * @param width      The new width of the surface
+     * @param height     The height of the surface
+     * @param parameters Camera parameters
+     * @return           The Camera size
      */
     private Camera.Size getBestPreviewSize(int width, int height,
                                            Camera.Parameters parameters) {
@@ -1115,12 +1282,13 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
         this.size = result;
         return (result);
-    }
+    }//end getBestPreviewSize
 
 
     /**
+     * Ends preview and releases the camera.
      *
-     * @param holder
+     * @param holder The SurfaceHolder whose surface is being released
      */
     @Override
     public void surfaceDestroyed(SurfaceHolder holder)
@@ -1133,7 +1301,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         camera.release();
         camera = null;
         isPreview = false;
-    }
+    }//end surfaceDestroyed
 
     
 //    private Intent getShareIntent(String type, String subject, String text) 
@@ -1168,7 +1336,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     /**
      * Checks for an active network connection. If there exists
      * no detected network connection or connection is too slow
-     * networkWarning() method is called. 
+     * networkWarning() method is called.
+     *
      * @return isConnected true if an active network connection exists
      */
     private boolean isNetWorkConnection() {
@@ -1228,10 +1397,16 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     		
     		new CountDownTimer(6000, 1500) {
 
-    			/* The calls to onTick(long) are synchronized to this 
+    			/* The calls to onTick(long) are synchronized to this
     			 * object so that one call to onTick(long) won't ever 
     			 * occur before the previous callback is complete */
-    			public void onTick(long millisUntilFinished) {
+
+                /**
+                 * Every tick give a beep warning and vibration warning.
+                 *
+                 * @param millisUntilFinished Time in milliseconds remaining
+                 */
+     			public void onTick(long millisUntilFinished) {
     				Log.i(TAG, "seconds remaining (1): " + millisUntilFinished / 1000);
     				if (isWarningSound == false) {
     					r.play();
@@ -1240,12 +1415,22 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     				
     		    }
 
+                /**
+                 * Check if there is an internet connection. If not keep checking until
+                 * the designated timer ends.
+                 */
     		    public void onFinish() {
     		    	/* recheck for internet connection every second for
     		    	 * 10 seconds. If no connection is detected after the 
     		    	 * allowed 10 seconds close application */
       		    	new CountDownTimer(10000, 1000) {
 
+                        /**
+                         * Check if there is a network connection every tick.
+                         *
+                         * @param millisUntilFinished Time in milliseconds until check
+                         *                            is finished
+                         */
     					@Override
     					public void onTick(long millisUntilFinished) {
     						// TODO Auto-generated method stub
@@ -1262,7 +1447,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     				    		
     				    	}
     					}
-    					
+
+                        /**
+                         * When the timer is done it plays a tone and an vibrate.
+                         * Ends the alertDialog object.
+                         */
     					@Override
     					public void onFinish() {
     						// TODO Auto-generated method stub
@@ -1289,19 +1478,19 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     
 
     /**
-     *
+     * Detects faces in the Camera view according to FaceDetectionListener.
+     * All faces detected will be stored into a Face array to be passed to
+     * be processed by this method. For one face it will detect if the face
+     * is centered. For two faces detects centered if neither face is in the
+     * center of the screen. For three or more faces it says multiple faces
+     * detected.
      */
     class FaceDetection implements Camera.FaceDetectionListener {
         /**
-         * Detects faces in the Camera view according to FaceDetectionListener.
-         * All faces detected will be stored into a Face array to be passed to
-         * be processed by this method. For one face it will detect if the face
-         * is centered. For two faces detects centered if neither face is in the
-         * center of the screen. For three or more faces it says multiple faces
-         * detected.
-         * @param faces   the number of faces detected by Camera.FaceDetectionListener
-         * @param camera  not used. Exists for overriding onFaceDetection from
-         *                FaceDetectionListener
+         * Notify the listener of the detected faces in the preview frame.
+         *
+         * @param faces   The detected faces in a list
+         * @param camera  The Camera service object
          */
         @Override
         public void onFaceDetection(Face[] faces, Camera camera) {
@@ -1369,7 +1558,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
     
     /**
-     * 
+     * Called when the activity has detected the user's press of the back key.
      */
     @Override
     public void onBackPressed() {
@@ -1381,7 +1570,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     }
     
     /**
-     * 
+     * Called after onCreate(Bundle) — or after onRestart() when
+     * the activity had been stopped, but is now again being displayed
+     * to the user. It will be followed by onResume().
      */
     @Override
     public void onStart() {
@@ -1391,7 +1582,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     }
     
     /**
-    *
+    * Called when you are no longer visible to the user.
     */
     @Override
     public void onStop() {
@@ -1401,19 +1592,25 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             textToSpeech.shutdown();
         }
         super.onStop();
-    }
+    }//end onStop
     
     /**
-    *
+    * Called as part of the activity lifecycle when an activity is going into
+    * the background, but has not (yet) been killed.
     */
     @Override
     public void onPause() {
     	Log.d(TAG, "onPause()");
         super.onPause();
-    }
+    }//end onPause
 
     /**
-     *
+     * Called by the system to remove the Service when it is no longer used.
+     * Ends textToSpeech and Voice_Engine, as well as calling Activity's
+     * onDestroy(). The service should clean up any resources it holds (threads,
+     * registered receivers, etc) at this point. Upon return, there will be no
+     * more calls in to this Service object and it is effectively dead. Do not
+     * call this method directly.
      */
     @Override
     public void onDestroy(){
@@ -1424,6 +1621,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         }
         Voice_Engine.singletonVE.finish();
         super.onDestroy();
-    }
+    }//end onDestroy
 
 } //end CameraActivity class

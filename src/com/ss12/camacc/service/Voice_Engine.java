@@ -16,29 +16,46 @@ import com.ss12.camacc.activity.CameraActivity;
 import com.ss12.camacc.helper.VoiceEngineHelper;
 
 /**
- * Created by bookieztopp on 2/8/14.
+ * Voice_Engine is the functionality for processing voice commands.
+ * Includes features to manage the full/partial recognition, error
+ * handling, and sending results back to the call location.
+ *
+ * @author Leonard Tatum
+ * @author Noah Anderson
+ * @author Stefan Eng
+ * @author Javier Pimentel
+ * @author Kristoffer Larson
  */
 public class Voice_Engine extends Activity {
     private static final String TAG = "Voice_Engine_Class";
-    
+    /**
+     * Voice_Engine self reference
+     */
     public static Voice_Engine singletonVE = null;
-    
+    /**
+     * SpeechRecognizer object
+     */
     private SpeechRecognizer sr;
     
     /**
+     * Starts voice recognition if voiceController is off. Otherwise
+     * stops voice recognition. Called by the system when the service
+     * is first created. Do not call this method directly.
      *
-     *
-     * @param savedInstanceState
+     * @param savedInstanceState If the activity is being re-initialized after
+     *                           previously being shut down then this Bundle
+     *                           contains the data it most recently supplied in
+     *                           onSaveInstanceState(Bundle). Otherwise it is null.
      */
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         
-        //this allows this class to be closed from another Activity
+        //This allows this class to be closed from another Activity
         singletonVE = this;
 
-        //only allow voice recognition if voiceController is OFF
+        //Only allow voice recognition if voiceController is OFF
         if (VoiceEngineHelper.getVoiceController() == false) {
         	setContentView(R.layout.wait_for_speech);
             sr = SpeechRecognizer.createSpeechRecognizer(this);
@@ -58,55 +75,65 @@ public class Voice_Engine extends Activity {
     } //end onCreate
 
     /**
-     *
+     * Listens for voice commands from the user.
+     * Used for receiving notifications from the SpeechRecognizer when the
+     * recognition related events occur. All the callbacks are executed on
+     * the Application main thread.
      */
     class listener implements RecognitionListener
     {
         /**
+         * Called when the endpointer is ready for the user to start speaking.
          *
-         * @param params
+         * @param params Parameters set by the recognition service. Reserved
+         *               for future use
          */
         public void onReadyForSpeech(Bundle params)
         {
             Log.d(TAG, "onReadyForSpeech");
-        }
+        }//end onReadyForSpeech
 
         /**
-         *
+         * The user has started to speak.
          */
         public void onBeginningOfSpeech()
         {
             Log.d(TAG, "onBeginningOfSpeech");
-        }
+        }//end onBeginningOfSpeech
 
         /**
+         * The sound level in the audio stream has changed.
          *
-         * @param rmsdB
+         * @param rmsdB The new RMS dB value
          */
         public void onRmsChanged(float rmsdB)
         {
-        }
+        }//end onRmsChanged
 
         /**
+         * More sound has been received.
          *
-         * @param buffer
+         * @param buffer A buffer containing a sequence of
+         *               big-endian 16-bit integers representing
+         *               a single channel audio stream.
          */
         public void onBufferReceived(byte[] buffer)
         {
             Log.d(TAG, "onBufferReceived");
-        }
+        }//end onBufferReceived
 
         /**
-         *
+         * Called after the user stops speaking.
          */
         public void onEndOfSpeech()
         {
             Log.d(TAG, "onEndofSpeech");
-        }
+        }//end onEndOfSpeech
 
         /**
+         * A network or recognition error occurred.
          *
-         * @param error
+         * @param error Code is defined in SpeechRecognizer
          */
         public void onError(int error)
         {
@@ -134,11 +161,12 @@ public class Voice_Engine extends Activity {
                 finish();
         	}
             
-        }
+        }//end onError
 
         /**
+         * Called when recognition results are ready.
          *
-         * @param results
+         * @param results The recognition results
          */
         public void onResults(Bundle results)
         {
@@ -148,31 +176,38 @@ public class Voice_Engine extends Activity {
             i.putStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS, data);
             setResult(RESULT_OK , i);
             finish(); 
-        }
+        }//end onResults
 
         /**
+         * Called when partial recognition results are available.
          *
-         * @param partialResults
+         * @param partialResults The returned results
          */
         public void onPartialResults(Bundle partialResults)
         {
             Log.d(TAG, "onPartialResults");
-        }
+        }//end onPartialResults
 
         /**
+         * Reserved for adding future events.
          *
-         * @param eventType
-         * @param params
+         * @param eventType The type of the occurred event
+         * @param params    A Bundle containing the passed parameters
          */
         public void onEvent(int eventType, Bundle params)
         {
             Log.d(TAG, "onEvent " + eventType);
-        }
+        }//end onEvent
         
     } //end listener class
 
     /**
-     *
+     *Called by the system to remove the Service when it is no longer used.
+     * Ends SpeechRecognizer, as well as calling Activity's
+     * onDestroy(). The service should clean up any resources it holds (threads,
+     * registered receivers, etc) at this point. Upon return, there will be no
+     * more calls in to this Service object and it is effectively dead. Do not
+     * call this method directly.
      */
     @Override
     protected void onDestroy() {
@@ -180,5 +215,5 @@ public class Voice_Engine extends Activity {
         sr.stopListening();
         sr.destroy();
         super.onDestroy();
-    }
-}
+    }//end onDestroy
+}//end Voice_Engine class
