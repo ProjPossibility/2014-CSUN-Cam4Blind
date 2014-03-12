@@ -50,12 +50,21 @@ import android.view.Window;
 import android.widget.Toast;
 
 /**
+ * CameraActivity is the main activity for taking pictures and running the
+ * application. It includes features to manage the textToSpeech for the user,
+ * voice options, network connection detection, facial recognition, error
+ * handling, and sending results back to the call location.
  *
+ * @author Leonard Tatum
+ * @author Noah Anderson
+ * @author Stefan Eng
+ * @author Javier Pimentel
+ * @author Kristoffer Larson
  */
 public class CameraActivity extends Activity implements SurfaceHolder.Callback, OnInitListener
 {
     public static String TAG = CameraActivity.class.getSimpleName();
- 
+
     private PreferencesHelper prefHelper;
     public Voice_Engine listener = new Voice_Engine();
 
@@ -95,17 +104,17 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     List<Intent> targetedShareIntents = new ArrayList<Intent>();
     HashMap<String, String> map = new HashMap<String, String>();
     private Handler mHandler = new Handler();
-    
+
     //shared preference variables
     private boolean isFirstLaunch;
     private String sharedPrefFirstLaunch;
-    
+
     private boolean isDescription;
     private String sharedPrefDescription;
-    
+
     private boolean isAutoSocial;
     private String sharedPrefAutoSocial;
-    
+
     /**
      *
      * @param savedInstanceState
@@ -120,15 +129,15 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         isNetWorkConnection();
 
     } //end onCreate
-    
-    
+
+
     /* setup the application to do initialization work inside of loadActivity().
      * This allows us to 'reload' (restart) this Activity from the beginning
-     * during phases of lost network connection(s) and reestablished 
+     * during phases of lost network connection(s) and reestablished
      * netowrk connection(s) */
     private void loadActivity() {
-        
-        if (isConnected == true) { 
+
+        if (isConnected == true) {
             setContentView(R.layout.activity_main);
             Log.d(TAG, "Main layout loaded successfully");
             surfaceView = (SurfaceView) findViewById(R.id.camera_preview);
@@ -141,13 +150,13 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
                 	//disable voice engine
                 	disableVoiceEngine();
-                	
+
                 	//disable face detection
                 	if (faceDetectionWrapper == true) {
                     	faceDetectionWrapper = !faceDetectionWrapper;
                     	camera.stopFaceDetection();
                     }
-                	
+
                 	//take picture and store image
                     camera.takePicture(myShutterCallback,
                             myPictureCallback_RAW, myPictureCallback_JPG);
@@ -155,24 +164,24 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
             configureSurface();
 
-            
+
             //check options stored in sharedPreferences
     		prefHelper = new PreferencesHelper(getApplicationContext());
 
     		isFirstLaunch = prefHelper.getPrefFirstLaunch(sharedPrefFirstLaunch);
     		isDescription = prefHelper.getPrefDescription(sharedPrefDescription);
     		isAutoSocial = prefHelper.getPrefAutoSocial(sharedPrefAutoSocial);
-    		
-    		Log.i(TAG, "isFirstLaunch(" + isFirstLaunch + ")" + 
+
+    		Log.i(TAG, "isFirstLaunch(" + isFirstLaunch + ")" +
     				" // isDescription(" + isDescription + ")" +
     				" // isAutoSocial(" + isAutoSocial + ")");
-            
-    		//initialize TTS Engine (starts the beginning commands of the application)
-    		textToSpeech = new TextToSpeech(CameraActivity.this, this);  
 
-    		/* This runnable is used to allow TTS Engine to fully initialize. 
+    		//initialize TTS Engine (starts the beginning commands of the application)
+    		textToSpeech = new TextToSpeech(CameraActivity.this, this);
+
+    		/* This runnable is used to allow TTS Engine to fully initialize.
     		 * It takes time for TTS Engine to initialize, and the first initilization
-    		 * is important for the entire application to work. TTS Engine is initialized 
+    		 * is important for the entire application to work. TTS Engine is initialized
     		 * in onStart() as a backup just in case there is failure here as well */
     		mHandler.postDelayed(new Runnable() {
 				public void run() {
@@ -192,43 +201,74 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         	//confirm network connection
         	isNetWorkConnection();
         }
-        
+
     } //end loadActivity() method
-    
+
 
     /**
      * Every time TTS Engine is initialized, onInit procs. We parsed
      * out the work to another method called ttsEngine() so that if
-     * initialization fails, or at any other point in the application 
-     * we would like to 
-     * @param status
+     * initialization fails, or at any other point in the application
+     * we would like to.
+     *
+     * @param status SUCCESS or ERROR.
      */
     @Override
     public void onInit(int status) {
     	Log.e(TAG, "ONINIT(): Text-to-speech initialized!");
 
         if (status == TextToSpeech.SUCCESS) {
+            /**
+             * Listener for events relating to the progress of an utterance through the synthesis
+             * queue. Each utterance is associated with a call to speak(String, int, HashMap) or
+             * synthesizeToFile(String, HashMap, String) with an associated utterance identifier,
+             * as per KEY_PARAM_UTTERANCE_ID. The callbacks specified in this method can be called
+             * from multiple threads.
+             */
         	textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-
+                /**
+                 * Called when an utterance "starts" as perceived by the caller. This will be soon
+                 * before audio is played back in the case of a speak(String, int, HashMap) or
+                 * before the first bytes of a file are written to storage in the case of
+                 * synthesizeToFile(String, HashMap, String).
+                 *
+                 * @param utteranceId The utterance ID of the utterance
+                 */
                 @Override
                 public void onStart(String utteranceId) {
                     // TODO Auto-generated method stub
 
-                }
+                }//end onStart
 
+                /**
+                 * Called when an error has occurred during processing. This can be called at
+                 * any point in the synthesis process. Note that there might be calls to
+                 * onStart(String) for specified utteranceId but there will never be a call to
+                 * both onDone(String) and onError(String) for the same utterance.
+                 *
+                 * @param utteranceId The utterance ID of the utterance
+                 */
                 @Override
-                public void onError(String utteranceId) {           	
+                public void onError(String utteranceId) {
                     // TODO Auto-generated method stub
 
-                }
+                }//end onError
 
+                /**
+                 * Called when an utterance has successfully completed processing. All audio will
+                 * have been played back by this point for audible output, and all output will
+                 * have been written to disk for file synthesis requests. This request is
+                 * guaranteed to be called after onStart(String).
+                 *
+                 * @param utteranceId The utterance ID of the utterance
+                 */
                 @Override
                 public void onDone(String utteranceId) {
-                	/* before we use Voice_Engine class we always check for 
+                	/* before we use Voice_Engine class we always check for
 					 * active network connection */
                 	if (isConnected == true && isCloseController == false) {
                 		//do not allow VoiceRecognition if face detection is active
-                		if (faceDetectionWrapper == false && isSelfie == false 
+                		if (faceDetectionWrapper == false && isSelfie == false
                 				&& voiceController == false) {
 
                     		Intent intent = new Intent(CameraActivity.this, Voice_Engine.class);
@@ -238,11 +278,19 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                 		//confirm network connection
                     	isNetWorkConnection();
                 	}
-                }
-            }); //end OnUtteranceProgressListener()
+                }//end onDone
+            }); //end setOnUtteranceProgressListener()
 
             textToSpeech.setLanguage(Locale.US);
             map.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "UniqueID");
+
+            /* booleans assigned from sharedPreferences are used to setup different
+             * messages depending upon the options the user has saved/setup */
+    		if (isFirstLaunch == false) {
+    			ttsPath(0);
+    		} else if (isFirstLaunch == true) {
+    			ttsPath(99);
+    		}
 
         } else if (status == TextToSpeech.ERROR){
         	//initialization of TTS failed so reinitialize new TTS Engine instance
@@ -256,6 +304,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         }
     } //end onInit() method
 
+    /**
+     *
+     */
     private void configureSurface()
     {
         surfaceHolder = surfaceView.getHolder();
@@ -267,37 +318,68 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
          * camera hardware can fill a push buffer directly and die graphics hardware
          * can display a push buffer directly (they share buffers): Deprecated in 3.0 */
         surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-    }
+    }//end configureSurface
 
+    /**
+     * Callback interface used to notify on completion of camera auto focus.
+     * Devices that do not support auto-focus will receive a "fake" callback
+     * to this interface.
+     */
     AutoFocusCallback myAutoFocusCallback = new AutoFocusCallback() {
 
+        /**
+         * Called when the camera auto focus completes.
+         *
+         * @param arg0 True if focus was successful, false if otherwise
+         * @param arg1 The Camera service object
+         */
         @Override
         public void onAutoFocus(boolean arg0, Camera arg1) {
             // TODO Auto-generated method stub
-        }};
+        //end onAutoFocus
+        }};//end myAutoFocusCallback
 
+    /**
+     * Callback interface used to signal the moment of actual image capture.
+     */
     ShutterCallback myShutterCallback = new ShutterCallback(){
 
+        /**
+         * Called as near as possible to the moment when a photo is captured from the sensor.
+         */
         @Override
         public void onShutter() {
             // TODO Auto-generated method stub
-
-        }};
-
+        //end onShutter
+        }};//end myShutterCallback
+    /**
+     * Callback interface used to signal the moment of a RAW image.
+     */
     PictureCallback myPictureCallback_RAW = new PictureCallback(){
 
+        /**
+         * Called when image data is available after a picture is taken.
+         *
+         * @param arg0 A byte array of the picture data
+         * @param arg1 The Camera service object
+         */
         @Override
         public void onPictureTaken(byte[] arg0, Camera arg1) {
             // TODO Auto-generated method stub
-        	if (isSelfie == false) {
-        		camera.startPreview();
-        	}
-        	
+        //end onPictureTaken
+        }};//end myPictureCallback_RAW
 
-        }};
-
+    /**
+     * Callback interface used to signal the moment of a JPG image.
+     */
     PictureCallback myPictureCallback_JPG = new PictureCallback(){
 
+        /**
+         * Called when image data is available after a picture is taken.
+         *
+         * @param arg0 A byte array of the picture data
+         * @param arg1 The Camera service object
+         */
         @Override
         public void onPictureTaken(byte[] arg0, Camera arg1) {
             // TODO Auto-generated method stub
@@ -306,12 +388,12 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             while(textToSpeech.isSpeaking()) {
             	//make sure ttsWrapper is reset to default value
             	ttsWrapper = false;
-            	textToSpeech.stop();     
+            	textToSpeech.stop();
             }
-            
+
             //taking a picture, make sure surface view is unclickable
             surfaceView.setEnabled(false);
-                       
+
             File imgFileDir = getDir();
             if (!imgFileDir.exists() && !imgFileDir.mkdirs()) {
             	Log.e(TAG, "Directory does not exist");
@@ -322,14 +404,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             SimpleDateFormat dateFormat = new SimpleDateFormat("ddMMyyyy", Locale.US);
             String time = timeFormat.format(new Date());
             String date = dateFormat.format(new Date());
-            String photoFile = date + "_camacc_" + time + ".jpg";       
+            String photoFile = date + "_camacc_" + time + ".jpg";
             String filename = imgFileDir.getPath() + File.separator + photoFile;
-          
+
             Log.i(TAG, "time: " + time + " date: " + date +
             		"\nfilename: " + filename + " photoFile: " + photoFile);
 
             File pictureFile = new File(filename);
-            try {            	
+            try {
 
             	BufferedOutputStream fos = new BufferedOutputStream
             			(new FileOutputStream(pictureFile));
@@ -352,13 +434,13 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
             //allow surface view camera
             surfaceView.setEnabled(true);
-            
+
             //start camera preview again
             camera.startPreview();
 
             //enable voice engine
             enableVoiceEngine();
-            
+
             //start TTS service and/or reset selfie flag to default
             if (isSelfie == true) {
             	isSelfie = false;
@@ -370,25 +452,32 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                 	ttsPath(5);
                 }
             }
+        //end onPictureTaken
+        }};//end myPictureCallback_JPG
 
-        }};
-        
+    /**
+     * Get the directory of the phone's photo gallery
+     *
+     * @return The file for photos to be saved in
+     */
     private File getDir() {
     	File sdDir = Environment.
     			getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
     	return new File(sdDir, "Camacc");
-    }
-          
+    }//end getDir
+
     /**
+     * Initializes textToSpeech and lays out the available options for the user, as
+     * well as creating a usage path for the user to take.
      *
-     * @param id
+     * @param id The program path that is being taken
      */
     private void ttsPath(final int id)
-    {	
+    {
     	if (textToSpeech == null) {
     		//reinitialize TTS Engine, re-attempt failed speaking instance
-    		textToSpeech = new TextToSpeech(CameraActivity.this, this); 
-    		
+    		textToSpeech = new TextToSpeech(CameraActivity.this, this);
+
     		//allow TTS Engine to initialize and bound between speaking
 			mHandler.postDelayed(new Runnable() {
 				public void run() {
@@ -396,7 +485,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 					ttsPath(reuseID);
 				}
 			}, 500);
-    		
+
     	} else {
         	//TTS Engine is active marker
         	ttsWrapper = true;
@@ -436,20 +525,20 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 							"On or Off. Or Auto Social Media On or Off. Or you can say " +
 							"Leave Options.";
                 	speakText(metaString);
-                	break;         
+                	break;
                 }
                 case 4:{
             		Log.i(TAG, "ttsPath: case 4");
                 	metaString = "Please say a command.";
                 	speakText(metaString);
-                	break;         
+                	break;
                 }
                 case 5:{
             		Log.i(TAG, "ttsPath: case 5");
                 	metaString = "Your photo has been saved.";
                 	speakText(metaString);
-                	break;         
-                } 
+                	break;
+                }
                 case 6:{
             		Log.i(TAG, "ttsPath: case 6");
                 	metaString = "What filter?";
@@ -574,7 +663,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         						"your command?";
         				speakText(metaString);
         				break;
-                }             
+                }
                 case 98:{
             			Log.i(TAG, "ttsPath: case 98");
             			metaString = "Please take a picture first before applying filter.";
@@ -594,31 +683,38 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             VoiceEngineHelper.setVoiceController(false);
             ttsWrapper = false;
     	}
-    }
+    }//end ttsPath
 
     /**
+     * Clears the textToSpeech queue if nothing is being said.
      *
-     * @param text
+     * @param text The text textToSpeech is saying
      */
     private void speakText(String text) {
         if(textToSpeech.isSpeaking()) {
             return;
         } else {
         	textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, map);
-        } 
-    }
+        }
+    }//end speakText
 
     /**
+     * Called when an activity you launched exits, giving you the requestCode you started it with,
+     * the resultCode it returned, and any additional data from it. The resultCode will be
+     * RESULT_CANCELED if the activity explicitly returned that, didn't return any result, or
+     * crashed during its operation. This handles user speech commands to the application.
      *
-     * @param requestCode
-     * @param resultCode
-     * @param data
+     * @param requestCode The integer request code originally supplied to startActivityForResult(),
+     *                    allowing you to identify who this result came from
+     * @param resultCode  The integer result code returned by the child activity through its
+     *                    setResult().
+     * @param data        An Intent, which can return result data to the caller.
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     	Log.i(TAG, "requestCode: " + requestCode + "\nresultCode: " + resultCode +
     			"\ndata: " + data);
-    	
+
     	if (resultCode != RESULT_CANCELED) {
     		if (Voice_Engine.singletonVE != null) {
         		try {
@@ -638,10 +734,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     			for (int i=0; i<listSize; i++) {
     				Log.i(TAG, "Recognized words: " + matches.get(i));
     			}
-                
+
     			if (matches.contains("take picture") || matches.contains("picture") ||
     					matches.contains("take photo") || matches.contains("photo")) {
-    				
+
     				if (isFilterController == true) {
 						isFilterController = !isFilterController; //reset isFilterController
 					}
@@ -652,7 +748,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     					camera.takePicture(myShutterCallback,
                     			myPictureCallback_RAW, myPictureCallback_JPG);
     				}
-    			
+
     			} else if (matches.contains("selfie") || matches.contains("self") ||
     					matches.contains("take selfie")) {
 
@@ -662,21 +758,21 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     					if (isFilterController == true) {
     						isFilterController = false; //reset isFilterController
     						speakText("Ok, preparing to take selfie.");
-    					} 
+    					}
     					isSelfie = true;
     					frontCamera();
-    				}	
+    				}
     			} else if (matches.contains("detection") || matches.contains("start detection") ||
-    					matches.contains("detect") || matches.contains("face") || 
+    					matches.contains("detect") || matches.contains("face") ||
     					matches.contains("recognition") || matches.contains("start recognition")) {
-                		                	
+
                 		if (isOptionController == true) {
         					ttsPath(15);
-        				} else {    
-        					
+        				} else {
+
         					//do not allow voice engine
         					disableVoiceEngine();
-                    		
+
                     		//allow the taking a picture by pressing anywhere on the app surface
                         	surfaceView.setEnabled(true);
                     		faceDetectionWrapper = true;
@@ -684,9 +780,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                     		camera.setFaceDetectionListener(new FaceDetection());
         				}
     			} else if (matches.contains("apply filter") || matches.contains("apply") ||
-                        matches.contains("filter") && 
+                        matches.contains("filter") &&
                         !matches.contains("twitter")) { //filter can be mistook for twitter
-    					
+
     				if (lastPictureTakenUri == null) {
     					ttsPath(17);
     				} else {
@@ -699,19 +795,19 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             						ttsPath(2);
             					} else {
             						ttsPath(6);
-            					}    							
-    						} else {	
+            					}
+    						} else {
     							ttsPath(16);
     						}
 
     					}
     				}
- 	
+
     			/*} else if (matches.contains("facebook") || matches.contains("face book")) {
 
 
     				}*/
-    					
+
     			} else if (matches.contains("twitter") || matches.contains("tweet")) {
     				//twitter set up with ACTION_SEND
     				if (lastPictureTakenUri == null) {
@@ -722,7 +818,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         				values.put(MediaStore.Images.Media.MIME_TYPE, "image/*");
         				values.put(MediaStore.Images.Media.DATA, agendaFilename);
         				final Uri contentUriFile = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-        				
+
         				try {
         					final Intent intent = new Intent(android.content.Intent.ACTION_SEND);
         					intent.setType("image/*");
@@ -737,16 +833,16 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
     			} else if (matches.contains("option") || matches.contains("options") ||
                         matches.contains("setting") || matches.contains("settings")) {
-    				
+
     					Log.i(TAG, "isDescription(" + isDescription + ")" +
     	    				" // isAutoSocial(" + isAutoSocial + ")");
-    					
+
     					if (isOptionController == false) {
 
                     		if (isFilterController == true) {
         						isFilterController = false; //reset isFilterController
-        					} 
-                    		
+        					}
+
                     		//if controller is on, option commands are forced
                     		isOptionController = true;
 
@@ -767,8 +863,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                     						"Auto social media turned off.");
                     			} else {
                     				speakText("Your settings are, long descriptions turned off. " +
-                    						"Auto social media turned on.");	
-                    			}	
+                    						"Auto social media turned on.");
+                    			}
                     			ttsPath(4);
                     		}
     					} else {
@@ -803,7 +899,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     						}
     					} else {
     						ttsPath(11);
-    					}		
+    					}
     			} else if (matches.contains("auto social media on") || matches.contains("social media on") ||
                         matches.contains("social on")) {
 
@@ -834,9 +930,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     					} else {
     						ttsPath(12);
     					}
-    			} else if (matches.contains("leave options") || matches.contains("leave option") || 
+    			} else if (matches.contains("leave options") || matches.contains("leave option") ||
     					matches.contains("leave")) {
-    					
+
     					if (isOptionController == true) {
     						isOptionController = false; //reset option controller
     						if (isDescription == true) {
@@ -844,24 +940,24 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     			    		} else {
     			    			ttsPath(4);
     			    		}
-    						
+
     					} else {
     						ttsPath(14);
-    					}		
+    					}
 
     			} else if (matches.contains("sepia") || matches.contains("yellow") ||
     					matches.contains("sophia") || matches.contains("sepia filter") ||
     					matches.contains("sofia")) {
-    				
+
     					if (isOptionController == true) {
     						ttsPath(15);
     					} else {
     						if (lastPictureTakenUri == null) {
         						ttsPath(98);
         					} else {
-        						Toast.makeText(CameraActivity.this, "One moment please.", 
+        						Toast.makeText(CameraActivity.this, "One moment please.",
         								Toast.LENGTH_SHORT).show();
-        						
+
         						ImageProcess imageProcess = new ImageProcess();
         						Log.d(TAG, "lastPictureTakenUri: " + lastPictureTakenUri);
                         		imageProcess.applyAndSave(this, lastPictureTakenUri, ImageProcess.FILTER_SEPIA);
@@ -887,9 +983,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     						if (lastPictureTakenUri == null) {
         						ttsPath(98);
         					} else {
-        						Toast.makeText(CameraActivity.this, "One moment please.", 
+        						Toast.makeText(CameraActivity.this, "One moment please.",
         								Toast.LENGTH_SHORT).show();
-        						
+
         						ImageProcess imageProcess = new ImageProcess();
         						Log.d(TAG, "lastPictureTakenUri: " + lastPictureTakenUri);
                         		imageProcess.applyAndSave(this, lastPictureTakenUri, ImageProcess.FILTER_GRAYSCALE);
@@ -904,7 +1000,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                         		}
         					}
     					}
-    
+
     			} else if (matches.contains("emboss") || matches.contains("emboss filter") ||
     					matches.contains("boss") || matches.contains("in bose")) {
 
@@ -914,9 +1010,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     						if (lastPictureTakenUri == null) {
         						ttsPath(98);
         					} else {
-        						Toast.makeText(CameraActivity.this, "One moment please.", 
+        						Toast.makeText(CameraActivity.this, "One moment please.",
         								Toast.LENGTH_SHORT).show();
-        						
+
         						ImageProcess imageProcess = new ImageProcess();
         						Log.d(TAG, "lastPictureTakenUri: " + lastPictureTakenUri);
                         		imageProcess.applyAndSave(this, lastPictureTakenUri, ImageProcess.FILTER_EMBOSS);
@@ -931,7 +1027,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                         		}
         					}
     					}
-	
+
     			} else if (matches.contains("invert") || matches.contains("invert filter")) {
 
     					if (isOptionController == true) {
@@ -940,9 +1036,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     						if (lastPictureTakenUri == null) {
         						ttsPath(98);
         					} else {
-        						Toast.makeText(CameraActivity.this, "One moment please.", 
+        						Toast.makeText(CameraActivity.this, "One moment please.",
         								Toast.LENGTH_SHORT).show();
-        						
+
         						ImageProcess imageProcess = new ImageProcess();
         						Log.d(TAG, "lastPictureTakenUri: " + lastPictureTakenUri);
                         		imageProcess.applyAndSave(this, lastPictureTakenUri, ImageProcess.FILTER_INVERT);
@@ -967,14 +1063,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     						if (lastPictureTakenUri == null) {
         						ttsPath(98);
         					} else {
-        						Toast.makeText(CameraActivity.this, "One moment please.", 
+        						Toast.makeText(CameraActivity.this, "One moment please.",
         								Toast.LENGTH_SHORT).show();
-        						
+
         						ImageProcess imageProcess = new ImageProcess();
         						Log.d(TAG, "lastPictureTakenUri: " + lastPictureTakenUri);
                         		imageProcess.applyAndSave(this, lastPictureTakenUri, ImageProcess.FILTER_BLUR);
 
-                        		Log.i(TAG, "Blur filter applied and saved");	
+                        		Log.i(TAG, "Blur filter applied and saved");
                         		if (isDescription == true) {
                         			speakText("Blur filter has been applied and saved. Would you like to share " +
                             				"this image? To post to Facebook say Facebook or to post to " +
@@ -994,9 +1090,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     						if (lastPictureTakenUri == null) {
         						ttsPath(98);
         					} else {
-        						Toast.makeText(CameraActivity.this, "One moment please.", 
+        						Toast.makeText(CameraActivity.this, "One moment please.",
         								Toast.LENGTH_SHORT).show();
-        						
+
         						ImageProcess imageProcess = new ImageProcess();
         						Log.d(TAG, "lastPictureTakenUri: " + lastPictureTakenUri);
                         		imageProcess.applyAndSave(this, lastPictureTakenUri, ImageProcess.FILTER_SHARPEN);
@@ -1021,9 +1117,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     						if (lastPictureTakenUri == null) {
         						ttsPath(98);
         					} else {
-        						Toast.makeText(CameraActivity.this, "One moment please.", 
+        						Toast.makeText(CameraActivity.this, "One moment please.",
         								Toast.LENGTH_SHORT).show();
-        						
+
         						ImageProcess imageProcess = new ImageProcess();
         						Log.d(TAG, "lastPictureTakenUri: " + lastPictureTakenUri);
                         		imageProcess.applyAndSave(this, lastPictureTakenUri, ImageProcess.FILTER_MORPH);
@@ -1049,9 +1145,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     						if (lastPictureTakenUri == null) {
         						ttsPath(98);
         					} else {
-        						Toast.makeText(CameraActivity.this, "One moment please.", 
+        						Toast.makeText(CameraActivity.this, "One moment please.",
         								Toast.LENGTH_SHORT).show();
-        						
+
         						ImageProcess imageProcess = new ImageProcess();
         						Log.d(TAG, "lastPictureTakenUri: " + lastPictureTakenUri);
                         		imageProcess.applyAndSave(this, lastPictureTakenUri, ImageProcess.FILTER_GAUSSIAN);
@@ -1067,8 +1163,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         					}
     					}
 
-    			} else if (matches.contains("improve") || matches.contains("improve image") || 
-    					matches.contains("improve quality") || matches.contains("bright") ||  
+    			} else if (matches.contains("improve") || matches.contains("improve image") ||
+    					matches.contains("improve quality") || matches.contains("bright") ||
     					matches.contains("groove") || matches.contains("brighten") ||
     					matches.contains("improved") || matches.contains("proove")) {
 
@@ -1078,16 +1174,16 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     						if (lastPictureTakenUri.getPath() == null) {
         						ttsPath(98);
         					} else {
-        						Toast.makeText(CameraActivity.this, "One moment please.", 
+        						Toast.makeText(CameraActivity.this, "One moment please.",
         								Toast.LENGTH_SHORT).show();
-        						
-        						/* perform two filter processes, both brightness correction and sharpen, to  
+
+        						/* perform two filter processes, both brightness correction and sharpen, to
             					 * improve the look of the image(s) */
             					ImageProcess imageProcess = new ImageProcess();
             					isQualityImprove = true; //will result with improved image (1 filter) without save
             					Log.d(TAG, "lastPictureTakenUri: " + lastPictureTakenUri);
             					imageProcess.applyAndSave(this, lastPictureTakenUri, ImageProcess.FILTER_BRIGHTNESS);
-            					
+
             					isQualityImprove = false; //will result with improved image (2 filters) with save
             					filterUri = ImageProcess.getFilterUri();
             					Log.d(TAG, "filterUri: " + filterUri);
@@ -1104,12 +1200,12 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                         		}
         					}
     					}
-    	            
-    			} else if (matches.contains("close app") || matches.contains("close") || 
+
+    			} else if (matches.contains("close app") || matches.contains("close") ||
     					matches.contains("shutdown app") || matches.contains("shutdown") ||
     					matches.contains("exit app") || matches.contains("exit")) {
 
-    					//close application    
+    					//close application
     					surfaceView.setEnabled(false);
     					camera.stopPreview();
     					isPreview = false;
@@ -1122,12 +1218,12 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 								finish();
 							}
 						}, 1000);
-    					
+
     			} else {
     					//reinitialize voice engine
-    					Log.e(TAG, "Ignoring non-commands; normal talking or " + 
+    					Log.e(TAG, "Ignoring non-commands; normal talking or " +
     							"noise inferred.");
-    					
+
     					//add short delay between reactivating voice engine
     					mHandler.postDelayed(new Runnable() {
 							public void run() {
@@ -1135,11 +1231,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 		                		Intent intent = new Intent(CameraActivity.this, Voice_Engine.class);
 		            			startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
 							}
-						}, 1000);		
+						}, 1000);
     			}
     		} //end if-statement: requestCode == VOICE_RECOGNITION_REQUEST_CODE && resultCode != 0
         } else {
-        	/* Voice Engine interrupted. Affirm last action and then 
+        	/* Voice Engine interrupted. Affirm last action and then
         	 * reinitialize TTS based on last action */
         	if (data == null) {
         		Log.i(TAG, "Voice engine interrupted, surfaceView button was pressed");
@@ -1157,15 +1253,18 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
    public void surfaceCreated(SurfaceHolder holder)
    {
 	   //start application with back camera object
-	   backCamera(); 
+	   backCamera();
    	}
 
     /**
+     * This is called immediately after any structural changes
+     * (format or size) have been made to the surface. Resets
+     * the preview of what the camera is looking at.
      *
-     * @param holder
-     * @param format
-     * @param width
-     * @param height
+     * @param holder The SurfaceHolder whose surface has changed
+     * @param format The new PixelFormat of the surface
+     * @param width  The new width of the surface
+     * @param height The new height of the surface
      */
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width,
@@ -1202,7 +1301,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                 e.printStackTrace();
             }
         }
-    }
+    }//end surfaceChanged
 
     /**
     *
@@ -1219,9 +1318,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 			 * and re-open() it in onResume() */
 	       camera.release();
 	       camera = null;
-	       isPreview = false; 
+	       isPreview = false;
 	   }
-       
+
    }
 
     private void frontCamera() {
@@ -1231,31 +1330,31 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 			if (cameraId < 0) {
 				isSelfie = false;
 				speakText("Unable to take selfie picture. Your device has no " +
-						"front camera. Please say another command.");			
+						"front camera. Please say another command.");
 			} else {
 				//front camera exists; create new camera object for selfie photos
 		    	if (camera != null) {
 		    		camera.release();
 		    	}
-		    	
+
 		    	cameraId = 1; //set 0 for back camera, 1 for front camera
-				cameraSelf = Camera.open(cameraId);      
+				cameraSelf = Camera.open(cameraId);
 				paramSelf = cameraSelf.getParameters();
-						
+
 	    		paramSelf.set("camera-id", 2); //set 1 for back camera, 2 for front camera
 	    		Camera.Size size = getBestPreviewSize(surfaceView.getWidth(), surfaceView.getHeight(), paramSelf);
 	    		paramSelf.setPreviewSize(size.width, size.height);
 
 	    		//continuous auto focus mode intended for taking pictures
 	   			paramSelf.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-	           
-	   			/* correct for white balance (balance of light/shadows from 
+
+	   			/* correct for white balance (balance of light/shadows from
 	   			 * daylight, shade, twilight, ect */
 	   			paramSelf.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
-	           
+
 	   			//allow pictures of fast moving objects
 	   			paramSelf.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
-	    		
+
 	    		try {
 	    			cameraSelf.setPreviewDisplay(surfaceHolder);
 	    			cameraSelf.setDisplayOrientation(90);
@@ -1269,7 +1368,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
 	            //do not allow voice engine
             	disableVoiceEngine();
-	            
+
 	            speakText("Hold camera still, 3, 2, 1.");
 
 				//give time for preview to update and adjustment of picture
@@ -1278,48 +1377,48 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 						//cameraSelf.takePicture(null, null, myPictureCallback_JPG);
 						cameraSelf.takePicture(myShutterCallback,
 			        			myPictureCallback_RAW, myPictureCallback_JPG);
-						
+
 					}
 				}, 3500);
 
 			}
 		}
 	}
-    
+
     private void backCamera() {
 
     	//prepare camera
 	    if (cameraSelf != null) {
 	    	cameraSelf.release();
 	    }
-	    	
+
 	    cameraId = 0; //set 0 for back camera, 1 for front camera
 		camera = Camera.open(cameraId);
 		param = camera.getParameters();
-		
+
 		//auto detect if flash is needed or not.
 		//Note: front camera does not support flash mode
 		if(param.getSupportedFlashModes().contains(Camera.Parameters.FLASH_MODE_AUTO)) {
-			param.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);	
+			param.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
 		}
 
 		//setup camera for best photo results according to device surface size
 		Camera.Size size = getBestPreviewSize(surfaceView.getWidth(), surfaceView.getHeight(), param);
 		param.setPreviewSize(size.width, size.height);
 		surfaceView.getTop();
-       
+
 		//continuous auto focus mode intended for taking pictures
 		param.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-       
-		/* correct for white balance (balance of light/shadows from 
+
+		/* correct for white balance (balance of light/shadows from
 		 * daylight, shade, twilight, ect */
 		param.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
-       
+
 		//allow pictures of fast moving objects
 		param.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
 
 		param.set("camera-id", 1); //set 1 for back camera, 2 for front camera
-   
+
 		try {
 			camera.setPreviewDisplay(surfaceHolder);
 			camera.setDisplayOrientation(90);
@@ -1344,14 +1443,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     	}
     	return cameraId;
     }
-    
-    
+
+
     /**
      *
-     * @param width
-     * @param height
-     * @param parameters
-     * @return
+     * @param width      The new width of the surface
+     * @param height     The height of the surface
+     * @param parameters Camera parameters
+     * @return           The Camera size
      */
     private Camera.Size getBestPreviewSize(int width, int height,
                                            Camera.Parameters parameters) {
@@ -1375,17 +1474,18 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         this.size = result;
         return (result);
     }
-    
+
     /**
      * Checks for an active network connection. If there exists
      * no detected network connection or connection is too slow
-     * networkWarning() method is called. 
+     * networkWarning() method is called.
+     *
      * @return isConnected true if an active network connection exists
      */
     private boolean isNetWorkConnection() {
     	isConnected = false;
-    	
-    	/* check connectivity and take special consideration for less 
+
+    	/* check connectivity and take special consideration for less
     	 * stable connections such as WIFI. This is done so by
     	 * making sure connecton strength is good enough to run
     	 * our voice engine */
@@ -1393,7 +1493,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     			NetworkUtils.isConnectedFast(CameraActivity.this)) {
     		Log.i(TAG, "isConnectedWifi: " + NetworkUtils.isConnectedWifi(CameraActivity.this) +
     				" isConnectedMobile: " + NetworkUtils.isConnectedMobile(CameraActivity.this));
-    		
+
     		if (isConnected == false) {
     			isConnected = true;
     			loadActivity();
@@ -1403,17 +1503,17 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     		Log.e(TAG, "No internet connection");
     		networkWarning();
     	}
-    	return isConnected;	
-    
+    	return isConnected;
+
     } //end isNetworkConnection()
- 
+
     /**
      * Notifies end user that there is no detected network connection
      * or that the network connection is too slow with three
      * consecutive ringtone beeps and three 500 millisecond vibrations.
-     * This method also allows a short period of time to reconnect to the 
+     * This method also allows a short period of time to reconnect to the
      * internet, otherwise it will close the application.
-     * 
+     *
      * @return isConnected true if an active network connection exists
      */
     private void networkWarning() {
@@ -1423,7 +1523,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     		Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
     		r = RingtoneManager.getRingtone(getApplicationContext(), notification);
     		v = (Vibrator) CameraActivity.this.getSystemService(Context.VIBRATOR_SERVICE);
-    		/* suspend app using alert dialog. This allows us to suspend the 
+    		/* suspend app using alert dialog. This allows us to suspend the
     		 * main UI, and then proceed with connectivity checks, reconnection
     		 * checks, and warning sounds before application closes for not
     		 * detecting a proper network connection */
@@ -1436,30 +1536,46 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     		Toast.makeText(CameraActivity.this,
         			"This application requires an internet connection, please connect " +
         			"to the internet now.", Toast.LENGTH_SHORT).show();
-		
+
     		alertDialog = dialogBuilder.create();
     		alertDialog.show();
-    		
+
     		new CountDownTimer(6000, 1500) {
 
-    			/* The calls to onTick(long) are synchronized to this 
-    			 * object so that one call to onTick(long) won't ever 
+    			/* The calls to onTick(long) are synchronized to this
+    			 * object so that one call to onTick(long) won't ever
     			 * occur before the previous callback is complete */
-    			public void onTick(long millisUntilFinished) {
+
+                /**
+                 * Every tick give a beep warning and vibration warning.
+                 *
+                 * @param millisUntilFinished Time in milliseconds remaining
+                 */
+     			public void onTick(long millisUntilFinished) {
     				Log.i(TAG, "seconds remaining (1): " + millisUntilFinished / 1000);
     				if (isWarningSound == false) {
     					r.play();
     					v.vibrate(500);
     				}
-    				
+
     		    }
 
+                /**
+                 * Check if there is an internet connection. If not keep checking until
+                 * the designated timer ends.
+                 */
     		    public void onFinish() {
     		    	/* recheck for internet connection every second for
-    		    	 * 10 seconds. If no connection is detected after the 
+    		    	 * 10 seconds. If no connection is detected after the
     		    	 * allowed 12 seconds close application */
       		    	new CountDownTimer(12000, 1000) {
 
+                        /**
+                         * Check if there is a network connection every tick.
+                         *
+                         * @param millisUntilFinished Time in milliseconds until check
+                         *                            is finished
+                         */
     					@Override
     					public void onTick(long millisUntilFinished) {
     						// TODO Auto-generated method stub
@@ -1473,10 +1589,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     				    		if (isConnected == false) {
     				    			isConnected = true;
     				    		}
-    				    		
+
     				    	}
     					}
-    					
+
+                        /**
+                         * When the timer is done it plays a tone and an vibrate.
+                         * Ends the alertDialog object.
+                         */
     					@Override
     					public void onFinish() {
     						// TODO Auto-generated method stub
@@ -1490,39 +1610,39 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     							loadActivity();
     						}
     					}
-    		    		
+
     		    	}.start();
-    		    	
+
     		    }
     		}.start();
- 
+
     	} catch (Exception e) {
     		e.printStackTrace();
     	}
     } //end networkWarning() method
-    
+
 
     /**
-     *
+     * Detects faces in the Camera view according to FaceDetectionListener.
+     * All faces detected will be stored into a Face array to be passed to
+     * be processed by this method. For one face it will detect if the face
+     * is centered. For two faces detects centered if neither face is in the
+     * center of the screen. For three or more faces it says multiple faces
+     * detected.
      */
     class FaceDetection implements Camera.FaceDetectionListener {
         /**
-         * Detects faces in the Camera view according to FaceDetectionListener.
-         * All faces detected will be stored into a Face array to be passed to
-         * be processed by this method. For one face it will detect if the face
-         * is centered. For two faces detects centered if neither face is in the
-         * center of the screen. For three or more faces it says multiple faces
-         * detected.
-         * @param faces   the number of faces detected by Camera.FaceDetectionListener
-         * @param camera  not used. Exists for overriding onFaceDetection from
-         *                FaceDetectionListener
+         * Notify the listener of the detected faces in the preview frame.
+         *
+         * @param faces   The detected faces in a list
+         * @param camera  The Camera service object
          */
         @Override
         public void onFaceDetection(Face[] faces, Camera camera) {
 
 			if (faceDetectionWrapper == true) {
 				Log.i(TAG, "Face detection mode activated");
-				
+
 				// no faces detected
 				if (faces.length == 0) {
 					Log.i(TAG, "faces detected: " + faces.length
@@ -1553,7 +1673,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 						Log.i(TAG, "People detected: " + faces.length
 								+ " // realFaceRect: " + realFaceRect.toString());
 						speakText("Face detected, not centered.");
-					}	
+					}
 				} else if (faces.length == 2) {
 					Log.i(TAG, "People detected: " + faces.length
 							+ " // faces[0].rect: " + faces[0].rect.toString());
@@ -1567,33 +1687,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
     } //end FaceDetection class
 
-    /**
-     * 
-     */
-    private void disableVoiceEngine() {
-    	Log.e(TAG, "disabled voice engine new helper method");
-    	VoiceEngineHelper.setVoiceController(true);
-    	voiceController = true;
-    	Voice_Engine.singletonVE.finish();
-    }
-    
-    /**
-     * 
-     */
-    private void enableVoiceEngine() {
-    	Log.e(TAG, "enable voice engine new helper method");
-    	VoiceEngineHelper.setVoiceController(false);
-		voiceController = false;
-    }
-    
-	/**
-	 * @return the isQualityImprove
-	 */
-	public static boolean isQualityImprove() {
-		return isQualityImprove;
-	}
-
-    
     /**
 	 * @return the lastPictureTakenUri
 	 */
@@ -1609,9 +1702,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 		CameraActivity.lastPictureTakenUri = lastPictureTakenUri;
 	}
 
-    
+
     /**
-     * 
+     * Called when the activity has detected the user's press of the back key.
      */
     @Override
     public void onBackPressed() {
@@ -1621,20 +1714,21 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         Voice_Engine.singletonVE.finish();
         finish();
     }
-    
+
     /**
-     * 
+     * Called after onCreate(Bundle) — or after onRestart() when
+     * the activity had been stopped, but is now again being displayed
+     * to the user. It will be followed by onResume().
      */
     @Override
     public void onStart() {
     	Log.d(TAG, "onStart()");
-    	textToSpeech = new TextToSpeech(CameraActivity.this, this); 
+    	textToSpeech = new TextToSpeech(CameraActivity.this, this);
     	super.onStart();
     }
-    
-    /**
-    *
-    */
+        /**
+        * Called when you are no longer visible to the user.
+        */
     @Override
     public void onStop() {
     	Log.d(TAG, "onStop()");
@@ -1643,19 +1737,25 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             textToSpeech.shutdown();
         }
         super.onStop();
-    }
-    
+    }//end onStop
+
     /**
-    *
+    * Called as part of the activity lifecycle when an activity is going into
+    * the background, but has not (yet) been killed.
     */
     @Override
     public void onPause() {
     	Log.d(TAG, "onPause()");
         super.onPause();
-    }
+    }//end onPause
 
     /**
-     *
+     * Called by the system to remove the Service when it is no longer used.
+     * Ends textToSpeech and Voice_Engine, as well as calling Activity's
+     * onDestroy(). The service should clean up any resources it holds (threads,
+     * registered receivers, etc) at this point. Upon return, there will be no
+     * more calls in to this Service object and it is effectively dead. Do not
+     * call this method directly.
      */
     @Override
     public void onDestroy(){
