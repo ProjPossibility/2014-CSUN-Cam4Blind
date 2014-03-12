@@ -39,7 +39,7 @@ public class PreferencesHelper {
 	
 	public Boolean getPrefDescription(String description) {
 		//get string from prefs or return false
-		return sharedPreferences.getBoolean("description", false);
+		return sharedPreferences.getBoolean("description", true);
 		
 	}
 	
