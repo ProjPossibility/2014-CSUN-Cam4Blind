@@ -8,6 +8,7 @@
 	<SurfaceView 
 	    android:layout_height="wrap_content" 
 	    android:layout_width="fill_parent" 
-	    android:id="@+id/camera_preview"/>
+	    android:contentDescription="@string/txt_content_desc"
+	    android:id="@+id/camera_preview" />
 
 </LinearLayout>
