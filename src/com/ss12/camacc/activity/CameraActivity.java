@@ -6,19 +6,21 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.graphics.Rect;
 import android.graphics.BitmapFactory.Options;
 
+import android.provider.Settings;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
 import com.ss12.camacc.R;
 import com.ss12.camacc.helper.PreferencesHelper;
 import com.ss12.camacc.helper.VoiceEngineHelper;
 import com.ss12.camacc.network.NetworkUtils;
+import com.ss12.camacc.service.Accessibility_Service;
+//import com.ss12.camacc.service.MyAccessibility;
 import com.ss12.camacc.service.Voice_Engine;
 
 import android.app.Activity;
@@ -169,6 +171,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
      */
     private boolean isAutoSocial;
     private String sharedPrefAutoSocial;
+    /**
+     * Accessibility Manager for checking whether accessibility services are enabled
+     */
+    AccessibilityManager aManager;
     
     /**
      * Checks for a network connection, and initializes the application if
@@ -185,13 +191,15 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         super.onCreate(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-
+//        checkAccess(this.getApplicationContext());
         //only initialize app if there exists a solid network connection
         isNetWorkConnection();
+        Intent ini = new Intent(this, Accessibility_Service.class);
+        startService(ini);
+
 
     } //end onCreate
-    
-    
+
     /**
      * Setup the application to do initialization work inside of loadActivity().
      * This allows us to 'reload' (restart) this Activity from the beginning
@@ -1297,7 +1305,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
 		/* Call release() to release the camera for use by other applications.
 		 * Applications should release the camera immediately in onPause()
-		 * and re-open() it in onResume() */
+		 * and re-open() it in */
         camera.release();
         camera = null;
         isPreview = false;
@@ -1574,16 +1582,18 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
      * the activity had been stopped, but is now again being displayed
      * to the user. It will be followed by onResume().
      */
+
+
     @Override
     public void onStart() {
-    	Log.d(TAG, "onStart()");
+
+        Log.d(TAG, "onStart()");
     	textToSpeech = new TextToSpeech(CameraActivity.this, this); 
     	super.onStart();
     }
-    
-    /**
-    * Called when you are no longer visible to the user.
-    */
+        /**
+        * Called when you are no longer visible to the user.
+        */
     @Override
     public void onStop() {
     	Log.d(TAG, "onStop()");
@@ -1622,5 +1632,44 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         Voice_Engine.singletonVE.finish();
         super.onDestroy();
     }//end onDestroy
+
+
+//    public void checkAccess(Context context)
+//    {
+//        aManager = (AccessibilityManager) context.getSystemService(Context.ACCESSIBILITY_SERVICE);
+//        List<AccessibilityServiceInfo> aList = aManager.getEnabledAccessibilityServiceList(0x00000001);
+//        Log.i("Accessiblity",aList.toString());
+//        if( aList.size() > 0 )
+//        {
+//            Boolean camAccServiceIsOn,sysAccServiceIsIon;
+//            camAccServiceIsOn=sysAccServiceIsIon=false;
+//            for ( int i = 0 ; i < aList.size(); i++ )
+//            {
+//
+//                if ((Arrays.asList(aList.get(i).packageNames).contains("com.ss12.camacc")))
+//                {
+//                    camAccServiceIsOn=true;
+//                }
+//                else
+//                {
+//                    sysAccServiceIsIon=true;
+//                }
+//                if ( sysAccServiceIsIon )
+//                {
+//
+//                    if ( !camAccServiceIsOn )
+//                    {
+//                        Toast.makeText(this.getApplicationContext(),
+//                                "Camacc SS12 Service has been added and needs to be enabled to run with" +
+//                                        "your accessiblity service, please turn on the camacc accessiblity service",
+//                                Toast.LENGTH_LONG);
+//                        startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+//                    }
+//
+//                }
+//            }
+//        }
+//    }
+
 
 } //end CameraActivity class
