@@ -1764,7 +1764,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
 			if (faceDetectionWrapper == true && balanced == true) {
 				Log.i(TAG, "Face detection mode activated");
+                Log.i(TAG, "Balanced");
 
+                //Find the middle of any screen
                 int vWidth = surfaceView.getWidth();
                 int vHeight = surfaceView.getHeight();
                 int halfWidth = surfaceView.getRight() / 2;
@@ -1798,7 +1800,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 								+ " // realFaceRect: " + realFaceRect.toString());
 						speakText("Face detected, not centered.");
 					}
-				}else if (faces.length == 2) {
+				} else if (faces.length == 2) {
                     //face one
                     int l1 = faces[0].rect.left;
                     int t1 = faces[0].rect.top;
@@ -1826,14 +1828,16 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                     //we need two middle rect because .intersects changes middle2
                     if ((middle2.intersect(realFaceRect1))&&(middle1.intersect(realFaceRect2))) {
                         Log.i(TAG, "People detected: " + faces.length);
-                        speakText("two face Centered.");
+                        speakText("Two face Centered.");
                     }
                     speakText("Two people detected");
                 } else if (faces.length >= 3) {
 					Log.i(TAG, "People detected: " + faces.length);
 					speakText("Multiple people detected.");
 				}
-			}
+			} else if (balanced == false) {
+                speakText("Not level");
+            }
 		}
 
     } //end FaceDetection class

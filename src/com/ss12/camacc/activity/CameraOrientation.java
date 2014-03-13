@@ -7,7 +7,8 @@ import android.util.Log;
 import android.view.OrientationEventListener;
 
 /**
- * Created by Kristoffer on 3/12/14.
+ * Listens for orientation changes and sets a boolean to true if the phone
+ * is within set levels.
  */
 public class CameraOrientation extends Activity {
 
@@ -24,7 +25,9 @@ public class CameraOrientation extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        /**
+         * Listens for the orientation of the phone.
+         */
         sensorListener = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
             @Override
             public void onOrientationChanged(final int orientation) {
@@ -32,9 +35,6 @@ public class CameraOrientation extends Activity {
                         new Runnable() {
                             @Override
                             public void run() {
-                                //orientXValue.setText("Orientation: " + orientation);
-                                //Log.e("the x value is :", ""+orientXValue.getX()); //Log phone orientation
-
                                 //True when at certain orientations
                                 if((orientation > 355) || (orientation < 5) || ((orientation > 85)
                                         && (orientation < 95)) || ((orientation > 175) && (orientation < 185))
@@ -45,18 +45,15 @@ public class CameraOrientation extends Activity {
                                 else {
                                     balanced = false;
                                 }
-
-                                if (balanced){
-                                    Log.e("yay", "it works!!!"); //Log test
-                                }
-                            }
-                        });
-            }
-        };
+                            }//end run
+                        });//end runOnUiThread
+            }//end onOrientationChanged
+        };//end OrientationEventListener
         sensorListener.enable(); //Enables Listener
     }//end onCreate
 
     public boolean getBalanced() {
         return balanced;
-    }
+    }//end getBalanced
+
 }//end CameraOrientation class
