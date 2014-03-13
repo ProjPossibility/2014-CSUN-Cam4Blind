@@ -1674,11 +1674,43 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 								+ " // realFaceRect: " + realFaceRect.toString());
 						speakText("Face detected, not centered.");
 					}
-				} else if (faces.length == 2) {
-					Log.i(TAG, "People detected: " + faces.length
-							+ " // faces[0].rect: " + faces[0].rect.toString());
-					speakText("Two people detected, both are centered.");
-				} else if (faces.length >= 3) {
+				}else if (faces.length == 2) {
+                //dimensions for the middle rect
+                int vWidth = surfaceView.getWidth();
+                int vHeight = surfaceView.getHeight();
+                int halfWidth = surfaceView.getRight() / 2;
+                int halfHeight = surfaceView.getBottom() / 2;
+                //face one
+                int l1 = faces[0].rect.left;
+                int t1 = faces[0].rect.top;
+                int r1 = faces[0].rect.right;
+                int b1 = faces[0].rect.bottom;
+                int left1 = (l1 + 1000) * vWidth / 2000;
+                int top1 = (t1 + 1000) * vHeight / 2000;
+                int right1 = (r1 + 1000) * vWidth / 2000;
+                int bottom1 = (b1 + 1000) * vHeight / 2000;
+                Rect realFaceRect1 = new Rect(left1, top1, right1+50, bottom1);
+                Rect middle1 = new Rect(halfWidth - 50, halfHeight - 50,
+                        halfWidth + 150, halfHeight + 150);
+                //face two
+                int l2 = faces[1].rect.left;
+                int t2 = faces[1].rect.top;
+                int r2 = faces[1].rect.right;
+                int b2 = faces[1].rect.bottom;
+                int left2 = (l2 + 1000) * vWidth / 2000;
+                int top2 = (t2 + 1000) * vHeight / 2000;
+                int right2 = (r2 + 1000) * vWidth / 2000;
+                int bottom2 = (b2 + 1000) * vHeight / 2000;
+                Rect realFaceRect2 = new Rect(left2, top2, right2+50, bottom2);
+                Rect middle2 = new Rect(halfWidth - 50, halfHeight - 50,
+                        halfWidth + 50, halfHeight + 150);
+                //we need two middle rect because .intersects changes middle2
+                if ((middle2.intersect(realFaceRect1))&(middle1.intersect(realFaceRect2))) {
+                    Log.i(TAG, "People detected: " + faces.length);
+                    speakText("two face Centered.");
+                }
+                speakText("Two people detected");
+            }else if (faces.length >= 3) {
 					Log.i(TAG, "People detected: " + faces.length);
 					speakText("Multiple people detected.");
 				}
