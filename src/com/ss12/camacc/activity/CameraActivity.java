@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import android.graphics.Rect;
+import android.view.*;
 import com.ss12.camacc.R;
 import com.ss12.camacc.helper.PreferencesHelper;
 import com.ss12.camacc.helper.VoiceEngineHelper;
@@ -43,10 +44,6 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.speech.tts.TextToSpeech.OnInitListener;
 import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-import android.view.View;
-import android.view.Window;
 import android.widget.Toast;
 
 /**
@@ -64,60 +61,168 @@ import android.widget.Toast;
 public class CameraActivity extends Activity implements SurfaceHolder.Callback, OnInitListener
 {
     public static String TAG = CameraActivity.class.getSimpleName();
-
+    /**
+     * A PreferencesHelper object to aid in storing user preferences.
+     */
     private PreferencesHelper prefHelper;
+    /**
+     * A Voice_Engine object used for listening to the user.
+     */
     public Voice_Engine listener = new Voice_Engine();
 
     private boolean ttsWrapper = false; //@true: TTS Engine is active
-    private boolean faceDetectionWrapper = false; //@true: Face Detection mode active
+    /**
+     * A boolean that is set to true when Face Detection mode is active.
+     */
+    private boolean faceDetectionWrapper = false;
+    /**
+     * A boolean that is set to true when a voice commands can be processed.
+     */
     private boolean voiceController = false;
+    /**
+     * A boolean that is set to true when a preview is available.
+     */
     private boolean isPreview = false;
+    /**
+     * A boolean that is set to true when there is a stable and active network
+     * connection.
+     */
     private boolean isConnected = false;
+    /**
+     * A boolean that is set to false when a warning when there is an unstable
+     * or non-existent network connection.
+     */
     private boolean isWarningSound;
+    /**
+     * A boolean that is used to control textToSpeech option paths.
+     */
     private boolean isOptionController = false;
+    /**
+     * A boolean that is used for filter application control.
+     */
     private boolean isFilterController = false;
+    /**
+     * A boolean that is used in controlling voice recognition.
+     */
     private boolean isCloseController = false;
+    /**
+     * A boolean that is used when taking "Selfies".
+     */
     private boolean isSelfie = false;
+    /**
+     * A boolean that is used to show if the quality of an image
+     * has been improved.
+     */
     public static boolean isQualityImprove = false;
-
+    /**
+     * The Uri of the last image taken.
+     */
 	public static Uri lastPictureTakenUri;
+    /**
+     * The Uri of a filtered image.
+     */
 	private Uri filterUri;
-
+    /**
+     * TextToSpeech object for talking to the user.
+     */
 	private static TextToSpeech textToSpeech;
-    private Camera camera; //back camera object
-    private Camera cameraSelf; //front camera object
+    /**
+     * Camera object for the back camera.
+     */
+    private Camera camera;
+    /**
+     * Camera object for the front camera.
+     */
+    private Camera cameraSelf;
+    /**
+     * Camera parameters for the back camera.
+     */
     Camera.Parameters param;
+    /**
+     * Camera parameters for the front camera.
+     */
     Camera.Parameters paramSelf;
-    private Size size;
-    private SurfaceView surfaceView;
-    private SurfaceHolder surfaceHolder;
-    private AlertDialog alertDialog;
-    private Ringtone r;
-    private Vibrator v;
 
+    private Size size;
+    /**
+     * SurfaceView object.
+     */
+    private SurfaceView surfaceView;
+    /**
+     * SurfaceHolder object.
+     */
+    private SurfaceHolder surfaceHolder;
+    /**
+     * AlertDialog object.
+     */
+    private AlertDialog alertDialog;
+    /**
+     * Ringtone object.
+     */
+    private Ringtone r;
+    /**
+     * Vibrator object.
+     */
+    private Vibrator v;
+    /**
+     * A String to pass text into the TextToSpeech object.
+     */
     private String metaString;
+    /**
+     * OrientationEventListener object
+     */
+    private OrientationEventListener sensorListener;
+    /**
+     * A boolean that is true if the phone orientation is leveled.
+     */
+    private boolean ready = false;
 
     long timeInMilliseconds;
+    /**
+     * An integer for the camera.
+     */
     private int cameraId = 0;
+    /**
+     * An integer request code for voice recognition.
+     */
     private static final int VOICE_RECOGNITION_REQUEST_CODE = 1234;
 
     List<Intent> targetedShareIntents = new ArrayList<Intent>();
+    /**
+     * A collection that stores utterances.
+     */
     HashMap<String, String> map = new HashMap<String, String>();
+    /**
+     * A Handler object for TextToSpeech engine handling.
+     */
     private Handler mHandler = new Handler();
 
     //shared preference variables
+    /**
+     * A boolean for the first application launch.
+     */
     private boolean isFirstLaunch;
     private String sharedPrefFirstLaunch;
-
+    /**
+     * A boolean for aiding in application path decisions.
+     */
     private boolean isDescription;
     private String sharedPrefDescription;
-
+    /**
+     * A boolean to set automatic social media sharing.
+     */
     private boolean isAutoSocial;
     private String sharedPrefAutoSocial;
 
     /**
+     * Checks for a network connection, and initializes the application if
+     * a stable connection exists. Called by the system when the service
+     * is first created. Do not call this method directly.
      *
-     * @param savedInstanceState
+     * @param savedInstanceState If the activity is being re-initialized after
+     *                           previously being shut down then this Bundle
+     *                           contains the data it most recently supplied in
+     *                           onSaveInstanceState(Bundle). Otherwise it is null.
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,7 +239,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     /* setup the application to do initialization work inside of loadActivity().
      * This allows us to 'reload' (restart) this Activity from the beginning
      * during phases of lost network connection(s) and reestablished
-     * netowrk connection(s) */
+     * network connection(s) */
     private void loadActivity() {
 
         if (isConnected == true) {
@@ -142,8 +247,15 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             Log.d(TAG, "Main layout loaded successfully");
             surfaceView = (SurfaceView) findViewById(R.id.camera_preview);
             surfaceView.setEnabled(true);
+            /**
+             * A button listener that encompasses the entire screen.
+             */
             surfaceView.setOnClickListener(new SurfaceView.OnClickListener() {
-
+                /**
+                 * Performs an action when the button on the screen is pressed.
+                 *
+                 * @param v View from the camera
+                 */
                 @Override
                 public void onClick(View v) {
                     // TODO Auto-generated method stub
@@ -160,7 +272,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
                 	//take picture and store image
                     camera.takePicture(myShutterCallback,
                             myPictureCallback_RAW, myPictureCallback_JPG);
-                }});
+                }});//end setOnClickListener
 
             configureSurface();
 
@@ -195,7 +307,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 		    			}
 		    		}
 				}
-			}, 700);
+			}, 700);//end postDelayed
 
         } else {
         	//confirm network connection
@@ -206,7 +318,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
 
     /**
-     * Every time TTS Engine is initialized, onInit procs. We parsed
+     * Every time TTS Engine is initialized, onInit processes. We parsed
      * out the work to another method called ttsEngine() so that if
      * initialization fails, or at any other point in the application
      * we would like to.
@@ -305,7 +417,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     } //end onInit() method
 
     /**
-     *
+     * Configures the surface of the screen.
      */
     private void configureSurface()
     {
@@ -1246,9 +1358,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     } //end onActivityForResult()
 
     /**
-    *
-    * @param holder
-    */
+     * This is called immediately after the surface is first created.
+     * It previews what the camera is seeing.
+     *
+     * @param holder The SurfaceHolder whose surface is being created
+     */
    @Override
    public void surfaceCreated(SurfaceHolder holder)
    {
@@ -1304,9 +1418,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     }//end surfaceChanged
 
     /**
-    *
-    * @param holder
-    */
+     * Ends preview and releases the camera.
+     *
+     * @param holder The SurfaceHolder whose surface is being released
+     */
    @Override
    public void surfaceDestroyed(SurfaceHolder holder)
    {
@@ -1323,6 +1438,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
    }
 
+    /**
+     * Access to the front camera on the phone for taking a "selfie".
+     */
     private void frontCamera() {
 
 		if (isSelfie == true) {
@@ -1383,8 +1501,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
 			}
 		}
-	}
+	}//end frontCamera
 
+    /**
+     * Access to the back camera on the phone for taking a picture.
+     */
     private void backCamera() {
 
     	//prepare camera
@@ -1426,8 +1547,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 			Log.e(TAG, "set preview error: ", ignored);
 		}
 		camera.setParameters(param);
-    }
+    }//end backCamera
 
+    /**
+     * Checks if there is a front camera.
+     *
+     * @return The cameraId of the front camera if it's found.
+     *         Otherwise -1.
+     */
     private int findFrontFacingCamera() {
     	cameraId = -1;
     	//search for the front facing camera
@@ -1442,10 +1569,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     		}
     	}
     	return cameraId;
-    }
+    }//end findFrontFacingCamera
 
 
     /**
+     * Obtains the best preview size from the camera.
      *
      * @param width      The new width of the surface
      * @param height     The height of the surface
@@ -1473,7 +1601,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
 
         this.size = result;
         return (result);
-    }
+    }//end getBestPreviewSize
 
     /**
      * Checks for an active network connection. If there exists
@@ -1558,7 +1686,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     					v.vibrate(500);
     				}
 
-    		    }
+    		    }//end onTick
 
                 /**
                  * Check if there is an internet connection. If not keep checking until
@@ -1591,7 +1719,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     				    		}
 
     				    	}
-    					}
+    					}//end onTick
 
                         /**
                          * When the timer is done it plays a tone and an vibrate.
@@ -1609,11 +1737,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     							alertDialog.dismiss();
     							loadActivity();
     						}
-    					}
+    					}//end onFinish
 
     		    	}.start();
 
-    		    }
+    		    }//end onFinish
     		}.start();
 
     	} catch (Exception e) {
@@ -1713,7 +1841,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         textToSpeech.shutdown();
         Voice_Engine.singletonVE.finish();
         finish();
-    }
+    }//end onBackPressed
 
     /**
      * Called after onCreate(Bundle) — or after onRestart() when
@@ -1725,10 +1853,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     	Log.d(TAG, "onStart()");
     	textToSpeech = new TextToSpeech(CameraActivity.this, this);
     	super.onStart();
-    }
-        /**
-        * Called when you are no longer visible to the user.
-        */
+    }//end onStart
+
+    /**
+    * Called when you are no longer visible to the user.
+    */
     @Override
     public void onStop() {
     	Log.d(TAG, "onStop()");
@@ -1766,6 +1895,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
         }
         Voice_Engine.singletonVE.finish();
         super.onDestroy();
-    }
+    }//end onDestroy
 
 } //end CameraActivity class

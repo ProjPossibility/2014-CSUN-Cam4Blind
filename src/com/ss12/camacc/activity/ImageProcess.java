@@ -32,30 +32,63 @@ public class ImageProcess {
 	
 	public static String TAG = ImageProcess.class.getSimpleName();
 
-    // Image Filters
+    /**
+     * A tag for no filter
+     */
     public static final int FILTER_NONE      = 0;
+    /**
+     * A tag for the Sepia filter
+     */
     public static final int FILTER_SEPIA     = 1;
+    /**
+     * A tag for the Gray Scale filter
+     */
     public static final int FILTER_GRAYSCALE = 2;
+    /**
+     * A tag for the Emboss filter
+     */
     public static final int FILTER_EMBOSS    = 3;
+    /**
+     * A tag for the Invert filter
+     */
     public static final int FILTER_INVERT    = 4;
+    /**
+     * A tag for the Blur filter
+     */
     public static final int FILTER_BLUR		 = 5;
+    /**
+     * A tag for the Sharpen filter
+     */
     public static final int FILTER_SHARPEN   = 6;
+    /**
+     * A tag for the Morph filter
+     */
     public static final int FILTER_MORPH     = 7;
+    /**
+     * A tag for the Brightness filter
+     */
     public static final int FILTER_BRIGHTNESS= 8;
+    /**
+     * A tag for the Gaussian filter
+     */
     public static final int FILTER_GAUSSIAN  = 9;
+    /**
+     * A Uri object for filters
+     */
+    public static Uri filterUri;
 
-    public static Uri filterUri;  
-
-	/**
-     *
+    /**
+     * Blank constructor. Used by other classes for referencing this class.
      */
     public ImageProcess(){}
 
     /**
+     * Finds the desired filter choice then applies it to the image.
+     * The image is then saved to the Android photo gallery.
      *
-     * @param context   Context for function
-     * @param uri       Uri that will be filtered, and saved to same location
-     * @param filter    Type of filter
+     * @param context Context for function
+     * @param uri     Uri that will be filtered, and saved to same location
+     * @param filter  Type of filter
      */
     public void applyAndSave(Context context, Uri uri, int filter) {
         // BitmapFactory options
@@ -76,12 +109,14 @@ public class ImageProcess {
         	Log.e(TAG, "Failure to decode Bitmap");
         	e.printStackTrace();
         }
-    }
-  
+    }//end applyAndSave
+
     /**
-     * @param context   Current context
-     * @param uri       Path of the image passed
-     * @param bitmap    Bitmap that will be saved that has filter applied
+     * Saves image into the Android gallery.
+     *
+     * @param context Current context
+     * @param uri Path of the image passed
+     * @param bitmap Bitmap that will be saved that has filter applied
      */
     public void saveFile(Context context, Uri uri, Bitmap bitmap) {
     	Log.d(TAG, "saveFile() ::" + 
@@ -110,13 +145,14 @@ public class ImageProcess {
                 e.printStackTrace();
             }
     	}
-    }
-    
+    }//end saveFile
+
     /**
+     * Applies a filter to the source image.
      *
-     * @param   id      desired filter to be applied to a bitmap
-     * @param   src     bitmap source image to be filtered
-     * @return          src bitmap with filter applied
+     * @param id Desired filter to be applied to a bitmap
+     * @param src Bitmap source image to be filtered
+     * @return The src bitmap with filter applied
      */
     public static Bitmap applyFilter(int id, Bitmap src) {
         FastBitmap img = new FastBitmap(src);
@@ -162,13 +198,15 @@ public class ImageProcess {
             filter.applyInPlace(img);
         }
         return img.toBitmap();
-    }
+    }//end applyFilter
     
     /**
+     * Gets the Filter Uri.
+     *
 	 * @return the filterUri
 	 */
 	public static Uri getFilterUri() {
 		return filterUri;
 	}
 
-}
+}//end ImageProcess class

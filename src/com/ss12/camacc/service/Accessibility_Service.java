@@ -9,17 +9,28 @@ import android.util.*;
 import java.util.HashMap;
 
 /**
- * Created by Noah on 3/10/14.
+ * Connects to the AccessibilityService that is built into the phone and makes use of it.
+ * If the service is off, the application uses it's built in textToSpeech. If the service
+ * is on, the application uses the AccessibilityService and turns off textToSpeech.
  */
 public class Accessibility_Service extends AccessibilityService implements TextToSpeech.OnInitListener {
 
     public static final String TAG = "volumeMaster";
 
+    /**
+     * Callback for AccessibilityEvents.
+     *
+     * @param event An event
+     */
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         Log.v(TAG,"on Accessibility Event");
 
-    }
+    }//end onAccessibilityEvent
+
+    /**
+     * Passes information to AccessibilityServiceInfo.
+     */
     @Override
     public void onServiceConnected()
     {
@@ -32,15 +43,25 @@ public class Accessibility_Service extends AccessibilityService implements TextT
         info.feedbackType = AccessibilityServiceInfo.FEEDBACK_SPOKEN;
         setServiceInfo(info);
 
-    }
+    }//end onServiceConnected
+
+    /**
+     * Is processed when Accessibility_Service is called.
+     *
+     * @param arg0 An argument
+     */
     @Override
     public void onInit(int arg0) {
         // TODO Auto-generated method stub
 
-    }
+    }//end onInit
+
+    /**
+     * Called on an interrupt.
+     */
     @Override
     public void onInterrupt() {
         Log.v(TAG, "***** onInterrupt");
 
-    }
-}
+    }//end onInterrupt
+}//end Accessibility_Service class
