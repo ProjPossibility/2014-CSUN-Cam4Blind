@@ -14,7 +14,6 @@ import android.util.Log;
 public class NetworkUtils {
 	
 	public static String TAG = NetworkUtils.class.getSimpleName();
-
     /**
      * Checks to see if there's a stable network connection.
      *

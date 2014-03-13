@@ -142,7 +142,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
      * Camera parameters for the front camera.
      */
     Camera.Parameters paramSelf;
-
     private Size size;
     /**
      * SurfaceView object.
@@ -236,7 +235,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
     } //end onCreate
 
 
-    /* setup the application to do initialization work inside of loadActivity().
+    /* Set up the application to do initialization work inside of loadActivity().
      * This allows us to 'reload' (restart) this Activity from the beginning
      * during phases of lost network connection(s) and reestablished
      * network connection(s) */

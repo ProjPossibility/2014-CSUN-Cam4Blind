@@ -157,7 +157,7 @@ public class Voice_Engine extends Activity {
                 sr.destroy();
                 finish();
         	}
-            
+
         }//end onError
 
         /**

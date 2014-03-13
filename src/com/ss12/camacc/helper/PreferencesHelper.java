@@ -9,6 +9,7 @@ import android.content.SharedPreferences.Editor;
  * Aids in the storing of user preferences.
  */
 public class PreferencesHelper {
+
 	public static String TAG = PreferencesHelper.class.getSimpleName();
     /**
      * SharedPreferences object.

@@ -16,7 +16,6 @@ import java.util.HashMap;
 public class Accessibility_Service extends AccessibilityService implements TextToSpeech.OnInitListener {
 
     public static final String TAG = "volumeMaster";
-
     /**
      * Callback for AccessibilityEvents.
      *

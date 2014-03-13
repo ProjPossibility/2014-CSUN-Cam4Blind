@@ -31,7 +31,6 @@ import java.io.IOException;
 public class ImageProcess {
 	
 	public static String TAG = ImageProcess.class.getSimpleName();
-
     /**
      * A tag for no filter
      */
@@ -97,7 +96,6 @@ public class ImageProcess {
         
         String path = uri.toString();
   //      File file = new File(path);
-
         try {
         	/* decode the file path into a bitmap. If the specified file name
              * is null, or cannot be decoded into a bitmap, the function returns 
