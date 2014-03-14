@@ -4,6 +4,13 @@
     <string name="txt_pic">Take Picture</string>
 	<string name="txt_content_desc">You can press anywhere on your phone\'s screen surface to take a picture</string>
     
+	<!-- FB App Id --> 
+	<string name="app_id">236133649844340</string>
+	<string name="status_update">Updating status for %1$s at %2$s</string>
+	<string name="successfully_posted_post">Successfully posted \'%1$s\'.\nPost ID: %2$s</string>
+	<string name="hello_user">Hello %1$s!</string>
+	<string name="photo_post">Photo Post</string>
+	
     <!-- Device Menu Related Options -->    
     <string name="menu_settings">Settings</string>
 

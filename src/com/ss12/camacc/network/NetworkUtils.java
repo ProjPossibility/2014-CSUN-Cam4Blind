@@ -8,19 +8,10 @@ import android.net.wifi.WifiManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
-/**
- * Deals with the network.
- */
 public class NetworkUtils {
 	
 	public static String TAG = NetworkUtils.class.getSimpleName();
-    /**
-     * Checks to see if there's a stable network connection.
-     *
-     * @param context The context.
-     * @return        True if there is a stable connection,
-     *                false otherwise.
-     */
+		
 	public static boolean isNetworkActive(Context context) {
 		//check general connectivity
 		ConnectivityManager conMgr = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -34,14 +25,8 @@ public class NetworkUtils {
 		}
 		Log.d(TAG, "No Connection");
 		return false;
-	}//end isNetworkActive
+	}
 
-    /**
-     * Gets the IP address for the system.
-     *
-     * @param context The context.
-     * @return        The IP address
-     */
 	public static String getIPAddr(Context context) {
 		WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
 		WifiInfo wifiInfo = wifiManager.getConnectionInfo();
@@ -54,36 +39,33 @@ public class NetworkUtils {
 			(ip >> 24 & 0xff));
 		Log.d(TAG, strIPAddr);
 		return strIPAddr;
-	}//end getIPAddress
+	}
 	
 	/**
-	 * Get the network info.
-     *
-	 * @param context The context.
-	 * @return        The network info
+	 * Get the network info
+	 * @param context
+	 * @return
 	 */
 	public static NetworkInfo getNetworkInfo(Context context) {
 	    ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
 	    return cm.getActiveNetworkInfo();
-	}//end getNetworkInfo
+	}
 	
 	/**
-	 * Check if there is any connectivity.
-     *
-	 * @param context The context.
-	 * @return        True if there's a connection, false
-     *                otherwise.
+	 * Check if there is any connectivity
+	 * @param context
+	 * @return
 	 */
 	public static boolean isConnected(Context context) {
 	    NetworkInfo info = NetworkUtils.getNetworkInfo(context);
 	    return (info != null && info.isConnected());
-	}//end isConnected
+	}
 	
 	/**
-	 * Check if there is any connectivity to a WIFI network.
-     *
-	 * @param context The context.
-	 * @return        True if connected to wifi, false otherwise.
+	 * Check if there is any connectivity to a WIFI network
+	 * @param context
+	 * @param type
+	 * @return
 	 */
 	public static boolean isConnectedWifi(Context context) {
 	    NetworkInfo info = NetworkUtils.getNetworkInfo(context);
@@ -91,36 +73,31 @@ public class NetworkUtils {
 	}
 	
 	/**
-	 * Check if there is any connectivity to a mobile network.
-     *
-	 * @param context The context.
-	 * @return        True if it's connected to a mobile network,
-     *                false otherwise.
+	 * Check if there is any connectivity to a mobile network
+	 * @param context
+	 * @param type
+	 * @return
 	 */
 	public static boolean isConnectedMobile(Context context) {
 	    NetworkInfo info = NetworkUtils.getNetworkInfo(context);
 	    return (info != null && info.isConnected() && info.getType() == ConnectivityManager.TYPE_MOBILE);
-	}//end isConnectedMobile
+	}
 	
 	/**
-	 * Check if there is fast connectivity.
-     *
-	 * @param context The context.
-	 * @return        True if the connection is fast and connected,
-     *                false otherwise.
+	 * Check if there is fast connectivity
+	 * @param context
+	 * @return
 	 */
 	public static boolean isConnectedFast(Context context) {
 	    NetworkInfo info = NetworkUtils.getNetworkInfo(context);
 	    return (info != null && info.isConnected() && NetworkUtils.isConnectionFast(info.getType(),info.getSubtype()));
-	}//end isConnectedFast
+	}
 	
 	/**
-	 * Check if there is fast connectivity.
-     *
-	 * @param type    Type of connection
-	 * @param subType Network type
-	 * @return        True if the connection is fast and connected,
-     *                false otherwise.
+	 * Check if there is fast connectivity
+	 * @param type
+	 * @param subType
+	 * @return
 	 */
 	public static boolean isConnectionFast(int type, int subType) {
 		if(type == ConnectivityManager.TYPE_WIFI) {
@@ -186,5 +163,5 @@ public class NetworkUtils {
 			Log.d(TAG, "No Network Info");
 			return false;
 		}
-	}//end isConnectionFast
-}//end NetworkUtils
+	}	
+}

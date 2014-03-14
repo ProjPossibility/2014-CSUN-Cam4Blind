@@ -1,12 +1,7 @@
 package com.ss12.camacc.helper;
 
-/**
- * Aids in Voice Engine control.
- */
 public class VoiceEngineHelper {
-    /**
-     * A boolean that is set to true when a voice commands can be processed.
-     */
+	
     public static boolean isVoiceController = false;
 	
 	/**
