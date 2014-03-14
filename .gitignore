@@ -31,3 +31,8 @@ task.xml
 
 # Out
 out/
+
+.project
+.classpath
+
+*.iml
