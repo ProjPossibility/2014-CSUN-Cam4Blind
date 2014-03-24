@@ -1,6 +1,7 @@
 package com.ss12.camacc.activity;
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -12,10 +13,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import com.facebook.FacebookAuthorizationException;
 import com.facebook.FacebookOperationCanceledException;
 import com.facebook.FacebookRequestError;
+import com.facebook.HttpMethod;
 import com.facebook.Request;
 import com.facebook.Response;
 import com.facebook.Session;
@@ -30,6 +35,7 @@ import com.ss12.camacc.R;
 import com.ss12.camacc.helper.PreferencesHelper;
 import com.ss12.camacc.helper.VoiceEngineHelper;
 import com.ss12.camacc.network.NetworkUtils;
+import com.ss12.camacc.service.Accessibility_Service;
 import com.ss12.camacc.service.Voice_Engine;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -40,6 +46,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.pm.ResolveInfo;
 import android.content.pm.Signature;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
@@ -48,6 +55,7 @@ import android.hardware.Camera.Face;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.ShutterCallback;
 import android.hardware.Camera.Size;
+import android.hardware.SensorManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -64,6 +72,7 @@ import android.speech.tts.TextToSpeech.OnInitListener;
 import android.support.v4.app.FragmentActivity;
 import android.util.Base64;
 import android.util.Log;
+import android.view.OrientationEventListener;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -83,15 +92,25 @@ import android.widget.Toast;
  * @author Javier Pimentel
  * @author Kristoffer Larson
  */
-public class CameraActivity extends FragmentActivity implements SurfaceHolder.Callback, OnInitListener
+public class CameraActivity extends Activity implements SurfaceHolder.Callback, OnInitListener
 {
     public static String TAG = CameraActivity.class.getSimpleName();
     /**
      * A PreferencesHelper object to aid in storing user preferences.
      */
+    
+    /**
+     * OrientationEventListener object
+     */
+    private OrientationEventListener sensorListener;
+    /**
+     * Boolean that is true if device orientation is leveled
+     */
+    private boolean balanced = false;
     private PreferencesHelper prefHelper;
     public Voice_Engine listener = new Voice_Engine();
-
+    
+    private boolean returnSocialMedia = false;
     private boolean ttsWrapper = false; //@true: TTS Engine is active
     /**
      * A boolean that is set to true when Face Detection mode is active.
@@ -126,19 +145,15 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
      * A boolean that is used for filter application control.
      */
     private boolean isFilterController = false;
-
     private boolean isCloseController = false;
     private boolean isSelfie = false;
     public static boolean isQualityImprove = false;
-
     /**
      * The Uri of the last picture taken.
      */
     public static Uri lastPictureTakenUri;
 
 	private Uri filterUri;
-
-	private static TextToSpeech textToSpeech;
     /**
      * TextToSpeech object.
      */
@@ -147,6 +162,7 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
      * Camera object.
      */
     private Camera camera;
+
     private Camera cameraSelf; //front camera object
     Camera.Parameters param;
     Camera.Parameters paramSelf;
@@ -171,6 +187,7 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
     /**
      * A String to pass text into the TextToSpeech object.
      */
+
     private String metaString;
 
     long timeInMilliseconds;
@@ -199,11 +216,13 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
     /**
      * A boolean for aiding in application path decisions.
      */
+
     private boolean isDescription;
     private String sharedPrefDescription;
     /**
      * A boolean to set automatic social media sharing.
      */
+    
     private boolean isAutoSocial;
     private String sharedPrefAutoSocial;
     
@@ -229,7 +248,6 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
         }
     };
     
-    
     /**
      * Checks for a network connection, and initializes the application if
      * a stable connection exists. Called by the system when the service
@@ -249,6 +267,9 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
         //only initialize app if there exists a solid network connection
         isNetWorkConnection();
         
+        Intent ini = new Intent(this, Accessibility_Service.class);
+        startService(ini);
+        
         if (isConnected == true) {
         	uiHelper = new UiLifecycleHelper(CameraActivity.this, callback);
             uiHelper.onCreate(savedInstanceState);
@@ -260,12 +281,76 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
 
             canPresentShareDialog = FacebookDialog.canPresentShareDialog(this,
                     FacebookDialog.ShareDialogFeature.SHARE_DIALOG);
-			loadActivity();
-		}
+		            
+		            /**
+		             * Listens for the orientation of the phone.
+		             */
+            		
+		     
+            
+            
+            sensorListener = new OrientationEventListener(CameraActivity.this, 
+            		SensorManager.SENSOR_DELAY_NORMAL) {
+                @Override
+                public void onOrientationChanged(int orientation) {
+                	Log.e("ORIENT", "orientation: " + orientation);
+                	if((orientation > 350) || (orientation < 10) || ((orientation > 80)
+                            && (orientation < 90)) || ((orientation > 170) && (orientation < 180))
+                            ||((orientation > 260) &&(orientation < 270))) {
 
-    } //end onCreate
-    
-    
+                        	balanced = true; 
+                        	} else {
+                        		balanced = false;
+                        	}
+                }
+            };
+            
+            		
+            
+            
+            
+            
+            
+//            sensorListener = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
+//		                @Override
+//		                public void onOrientationChanged(final int orientation) {
+//		                	Log.e("ORIENT", "orientation: " + orientation);
+//		                	
+//		                    CameraActivity.this.runOnUiThread(
+//		                            new Runnable() {
+//		                                @Override
+//		                                public void run() {
+//		                                    //True when at certain orientations
+//		                                	
+//		                                	Log.e("ORIENT", "orientation: " + orientation);
+//
+//		                                	if((orientation > 350) || (orientation < 10) || ((orientation > 80)
+//                                            && (orientation < 90)) || ((orientation > 170) && (orientation < 180))
+//                                            ||((orientation > 260) &&(orientation < 270))) {
+//
+//		                                	balanced = true; 
+//		                                	} else {
+//		                                		balanced = false;
+//		                                	}
+//		                                	
+//		                                	if((orientation > 355) || (orientation < 5) || ((orientation > 85)
+//		                                            && (orientation < 95)) || ((orientation > 175) && (orientation < 185))
+//		                                            ||((orientation > 265) &&(orientation < 285))) {
+//
+//		                                        balanced = true; 
+//		                                    }
+//		                                    else {
+//		                                        balanced = false;
+//		                                    }
+//		                                }//end run
+//		                            });//end runOnUiThread
+//		                }//end onOrientationChanged
+//		            };//end OrientationEventListener            
+					loadActivity();
+				}
+
+		    } //end onCreate
+
     /* setup the application to do initialization work inside of loadActivity().
      * This allows us to 'reload' (restart) this Activity from the beginning
      * during phases of lost network connection(s) and reestablished 
@@ -337,11 +422,11 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
     } //end loadActivity() method
     
 
-/**
+    /**
      * Every time TTS Engine is initialized, onInit procs. We parsed
      * out the work to another method called ttsEngine() so that if
      * initialization fails, or at any other point in the application 
-     * we would like to.
+     * we would like to 
      *
      * @param status SUCCESS or ERROR.
      */
@@ -350,28 +435,32 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
     	Log.e(TAG, "ONINIT(): Text-to-speech initialized!");
 
         if (status == TextToSpeech.SUCCESS) {
-            /**
+        	
+        	/**
              * Listener for events relating to the progress of an utterance through the synthesis
              * queue. Each utterance is associated with a call to speak(String, int, HashMap) or
              * synthesizeToFile(String, HashMap, String) with an associated utterance identifier,
              * as per KEY_PARAM_UTTERANCE_ID. The callbacks specified in this method can be called
              * from multiple threads.
              */
-		textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {                /**
-                 * Called when an utterance "starts" as perceived by the caller. This will be soon
-                 * before audio is played back in the case of a speak(String, int, HashMap) or
-                 * before the first bytes of a file are written to storage in the case of
-                 * synthesizeToFile(String, HashMap, String).
-                 *
-                 * @param utteranceId The utterance ID of the utterance
-                 */
-
+        	textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+        		
+        		/** 
+        		 * Called when an utterance "starts" as perceived by the caller. This will be soon
+        		 * before audio is played back in the case of a speak(String, int, HashMap) or
+        		 * before the first bytes of a file are written to storage in the case of
+        		 * synthesizeToFile(String, HashMap, String).
+        		 * 
+        		 * @param utteranceId The utterance ID of the utterance
+        		 */
+        		
                 @Override
                 public void onStart(String utteranceId) {
                     // TODO Auto-generated method stub
 
                 }
-		/**
+
+                /**
                  * Called when an error has occurred during processing. This can be called at
                  * any point in the synthesis process. Note that there might be calls to
                  * onStart(String) for specified utteranceId but there will never be a call to
@@ -379,12 +468,14 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
                  *
                  * @param utteranceId The utterance ID of the utterance
                  */
+                
                 @Override
                 public void onError(String utteranceId) {           	
                     // TODO Auto-generated method stub
 
                 }
-		/**
+
+                /**
                  * Called when an utterance has successfully completed processing. All audio will
                  * have been played back by this point for audible output, and all output will
                  * have been written to disk for file synthesis requests. This request is
@@ -448,7 +539,7 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
      */
     AutoFocusCallback myAutoFocusCallback = new AutoFocusCallback() {
 
-        /**
+    	/**
          * Called when the camera auto focus completes.
          *
          * @param arg0 True if focus was successful, false if otherwise
@@ -458,12 +549,13 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
         public void onAutoFocus(boolean arg0, Camera arg1) {
             // TODO Auto-generated method stub
         }};
+
     /**
-     * Callback interface used to signal the moment of actual image capture.
+     * Callback used to signal the moment of actual image capture.
      */
     ShutterCallback myShutterCallback = new ShutterCallback(){
 
-        /**
+    	/**
          * Called as near as possible to the moment when a photo is captured from the sensor.
          */
         @Override
@@ -471,17 +563,19 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
             // TODO Auto-generated method stub
 
         }};
+
     /**
      * Callback interface used to signal the moment of a RAW image.
      */
     PictureCallback myPictureCallback_RAW = new PictureCallback(){
-        
-	/**
-         * Called when image data is available after a picture is taken.
-         *
-         * @param arg0 A byte array of the picture data
-         * @param arg1 The Camera service object
-         */
+
+    	/**
+    	 * Called when image data is available after a picture is taken.
+    	 *
+    	 * @param arg0 A byte array of the picture data
+    	 * @param arg1 The Camera service object
+    	 */
+    	
         @Override
         public void onPictureTaken(byte[] arg0, Camera arg1) {
             // TODO Auto-generated method stub
@@ -500,6 +594,8 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
 
         	//disable voice engine
         	disableVoiceEngine();
+        	
+        	sensorListener.disable();
         	
             //interrupt TTS Engine if active
             while(textToSpeech.isSpeaking()) {
@@ -769,6 +865,20 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
                 	speakText(metaString);
                 	break;
                 }
+                case 23:{
+            		Log.i(TAG, "ttsPath: case 23");
+                	metaString = "You must have face book installed to perform this action. " +
+                			"Please say a command.";
+                	speakText(metaString);
+                	break;
+                }
+                case 24:{
+            		Log.i(TAG, "ttsPath: case 24");
+                	metaString = "You must have twitter installed to perform this action. " +
+                			"Please say a command.";
+                	speakText(metaString);
+                	break;
+                }
                 case 97:{
         				Log.i(TAG, "ttsPath: case 97");
         				metaString = "Sorry, I did not get that. Can you please repeat " +
@@ -886,7 +996,8 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
         					disableVoiceEngine();
                     		
                     		//allow the taking a picture by pressing anywhere on the app surface
-                        	surfaceView.setEnabled(true);
+        					sensorListener.enable();
+        					surfaceView.setEnabled(true);
                     		faceDetectionWrapper = true;
                     		camera.startFaceDetection();
                     		camera.setFaceDetectionListener(new FaceDetection());
@@ -914,39 +1025,97 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
 
     					}
     				}
- 	
+    			} else if (matches.contains("help")) {
+    					
+    				if (isFilterController == true) {
+    					speakText("Here are all the filter commands you can say. " +
+    							"Sepia, Gray Scale, Emboss, Invert, Blur, Sharpen, Morph, " +
+    							"Gaussian, Improve Quality. Please say what filter you would " +
+    							"like to apply or say Help to hear these options again.");
+    				} else if (isOptionController == true) {
+    					if (isDescription == true) {
+                			if (isAutoSocial == false) {
+                				speakText("Options allow you to disable and enable a variety of " +
+            							"features. Your current settings are, long " +
+            							"descriptions turned on. Auto social media turned off.");
+                			} else {
+                				speakText("Options allow you to disable and enable a variety of " +
+            							"features. Your current settings are, long " +
+            							"descriptions turned on. Auto social media turned on.");
+                			}
+    					} else {
+    						if (isAutoSocial == false) {
+                				speakText("Options allow you to disable and enable a variety of " +
+            							"features. Your current settings are, long " +
+            							"descriptions turned off. Auto social media turned off.");
+                			} else {
+                				speakText("Options allow you to disable and enable a variety of " +
+            							"features. Your current settings are, long " +
+            							"descriptions turned off. Auto social media turned on.");
+                			}
+    					}	
+    				} else {
+    					speakText("There are a variety of commands that you can say. Here is a complete " +
+    							"list. You can say Picture to take a picture, Selfie to use front camera, " +
+    							"Detection to detect faces, Options to enter option settings or Exit to exit " +
+    							"the application. Once you take a picture you can say Filter to apply a " +
+    							"filter, or Twitter or Facebook to share to social media. Once in options, " +
+    							"you can toggle long descriptions on or off, by saying Descriptions On or " +
+    							"Off. You can also toggle auto social media on or off by saying, Auto " +
+    							"Social Media On or Off.");
+    				}
+
     			} else if (matches.contains("facebook") || matches.contains("face book")) {
     				Log.i(TAG, "matched facebook command");
     				//onClickPostStatusUpdate();
     				
-    				performPublish(PendingAction.POST_STATUS_UPDATE, canPresentShareDialog);
-    				
-    				
-    				
-    				
-	}
+    				if (lastPictureTakenUri == null) {
+    					ttsPath(17);
+    				} else {
+    					//performPublish(PendingAction.POST_STATUS_UPDATE, canPresentShareDialog);
     					
-    			} else if (matches.contains("twitter") || matches.contains("tweet")) {
+    					Intent facebookIntent = getShareIntent("facebook", "CamAccc", "CamAcc is a great " +
+    						"photo capturing and sharing application for the Blind. Check it out!");	
+
+    					if(facebookIntent == null) {
+    						ttsPath(23); //no facebook application installed
+    					} else {
+    						returnSocialMedia = true;
+    						performPublish(PendingAction.POST_STATUS_UPDATE, canPresentShareDialog);
+    					}
+    					
+    				}
+	
+    			} else if (matches.contains("twitter") || matches.contains("tweet") || 
+    					(matches.contains("Twitter"))) {
     				//twitter set up with ACTION_SEND
     				if (lastPictureTakenUri == null) {
     					ttsPath(17);
     				} else {
-    					String agendaFilename = lastPictureTakenUri.toString();
-        				final ContentValues values = new ContentValues(2);
-        				values.put(MediaStore.Images.Media.MIME_TYPE, "image/*");
-        				values.put(MediaStore.Images.Media.DATA, agendaFilename);
-        				final Uri contentUriFile = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-        				
-        				try {
-        					final Intent intent = new Intent(android.content.Intent.ACTION_SEND);
-        					intent.setType("image/*");
-        					intent.putExtra(Intent.EXTRA_TEXT, "Check out this new image taken with #CamAcc! " +
-        							"Retweet or respond back with comments.");
-        					intent.putExtra(android.content.Intent.EXTRA_STREAM, contentUriFile);
-        					CameraActivity.this.startActivity(intent);
-        				} catch (Exception e) {
-        					e.printStackTrace();
-        				}
+    					Intent twitterIntent = getShareIntent("twitter", "CamAccc", "CamAcc is a great " +
+        						"photo capturing and sharing application for the Blind. Check it out!");
+
+    				    if(twitterIntent == null) {
+    				    	ttsPath(24); //no twitter application installed
+    				    } else {
+    				    	String agendaFilename = lastPictureTakenUri.toString();
+            				final ContentValues values = new ContentValues(2);
+            				values.put(MediaStore.Images.Media.MIME_TYPE, "image/*");
+            				values.put(MediaStore.Images.Media.DATA, agendaFilename);
+            				final Uri contentUriFile = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            				
+            				try {
+            					returnSocialMedia = true;
+            					final Intent intent = new Intent(android.content.Intent.ACTION_SEND);
+            					intent.setType("image/*");
+            					intent.putExtra(Intent.EXTRA_TEXT, "Check out this new image taken with #CamAcc! " +
+            							"Retweet or respond back with comments.");
+            					intent.putExtra(android.content.Intent.EXTRA_STREAM, contentUriFile);
+            					CameraActivity.this.startActivity(intent);
+            				} catch (Exception e) {
+            					e.printStackTrace();
+            				}
+    				    }
     				}
 
     			} else if (matches.contains("option") || matches.contains("options") ||
@@ -989,7 +1158,8 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
     						ttsPath(13);
     					}
     			} else if (matches.contains("description on") || matches.contains("descriptions on") ||
-                        matches.contains("long description on") || matches.contains("long descriptions on")) {
+                        matches.contains("long description on") || matches.contains("long descriptions on")||
+                        matches.contains("longest scriptions on") || matches.contains("longest scriptions on")) {
 
     					if (isOptionController == true) {
     						if (isDescription == true) {
@@ -1004,8 +1174,9 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
     						ttsPath(11);
     					}
     			} else if (matches.contains("description off") || matches.contains("descriptions off") ||
-                        matches.contains("long description off") || matches.contains("long descriptions off")) {
-
+                        matches.contains("long description off") || matches.contains("long descriptions off") ||
+    					matches.contains("longest scriptions off") || matches.contains("longest scriptions off")) {
+    				
     					if (isOptionController == true) {
     						if (isDescription == true) {
     							isDescription = !isDescription;
@@ -1364,17 +1535,13 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
         }
     } //end onActivityForResult()
 
-    
-    
-    
-    
 
-    /**
-     * This is called immediately after the surface is first created.
-     * It previews what the camera is seeing.
-     *
-     * @param holder The SurfaceHolder whose surface is being created
-     */
+   /**
+    * This is called immediately after the surface is first created.
+    * It previews what the camera is seeing.
+    *
+    * @param holder The SurfaceHolder whose surface is being created
+    */
    @Override
    public void surfaceCreated(SurfaceHolder holder)
    {
@@ -1382,16 +1549,16 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
 	   backCamera(); 
    	}
 
-    /**
-     * This is called immediately after any structural changes
-     * (format or size) have been made to the surface. Resets
-     * the preview of what the camera is looking at.
-     *
-     * @param holder The SurfaceHolder whose surface has changed
-     * @param format The new PixelFormat of the surface
-     * @param width  The new width of the surface
-     * @param height The new height of the surface
-     */
+   /**
+    * This is called immediately after any structural changes
+    * (format or size) have been made to the surface. Resets
+    * the preview of what the camera is looking at.
+    *
+    * @param holder The SurfaceHolder whose surface has changed
+    * @param format The new PixelFormat of the surface
+    * @param width  The new width of the surface
+    * @param height The new height of the surface
+    */
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width,
                                int height)
@@ -1606,8 +1773,7 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
     /**
      * Checks for an active network connection. If there exists
      * no detected network connection or connection is too slow
-     * networkWarning() method is called.
-     *
+     * networkWarning() method is called. 
      * @return isConnected true if an active network connection exists
      */
     private boolean isNetWorkConnection() {
@@ -1729,6 +1895,35 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
     	}
     } //end networkWarning() method
 
+    
+    private Intent getShareIntent(String type, String subject, String text) 
+    {
+        boolean found = false;
+        Intent share = new Intent(android.content.Intent.ACTION_SEND);
+        share.setType("text/plain");
+
+        // gets the list of intents that can be loaded.
+        List<ResolveInfo> resInfo = this.getPackageManager().queryIntentActivities(share, 0);
+        System.out.println("resinfo: " + resInfo);
+        if (!resInfo.isEmpty()){
+            for (ResolveInfo info : resInfo) {
+                if (info.activityInfo.packageName.toLowerCase().contains(type) || 
+                        info.activityInfo.name.toLowerCase().contains(type) ) {
+                    share.putExtra(Intent.EXTRA_SUBJECT,  subject);
+                    share.putExtra(Intent.EXTRA_TEXT,     text);
+                    share.setPackage(info.activityInfo.packageName);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                return null;
+            return share;
+        }
+        return null;
+    }
+    
+    
     private void onSessionStateChange(Session session, SessionState state, Exception exception) {
         if (pendingAction != PendingAction.NONE &&
                 (exception instanceof FacebookOperationCanceledException ||
@@ -1786,25 +1981,76 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
     	Log.d(TAG, "createShareDialogBuilder()");
         return new FacebookDialog.ShareDialogBuilder(this)
                 .setName("CamAcc")
-                .setDescription("Check out this new image taken with CamAcc!");
-                
-        
-        		//.setLink("http://developers.facebook.com/android");
+                .setDescription("Check out this new image taken with CamAcc!")
+        		.setLink("http://developers.facebook.com/android");
     }
-    
-    
-    
-    
-    
+
     private void postStatusUpdate() {
     	Log.d(TAG, "postStatusUpdate()");
         if (canPresentShareDialog) {
             FacebookDialog shareDialog = createShareDialogBuilder().build();
             uiHelper.trackPendingDialogCall(shareDialog.present());
+            
+            Log.d(TAG, "user: " + user + 
+            		" Session.getActiveSession(): " + Session.getActiveSession());
+           
         } else if (user != null && hasPublishPermission()) {
+        	Log.i(TAG, "hasPublishPermission(): " + hasPublishPermission());
+        	
             final String message = getString(R.string.status_update, user.getFirstName(), (new Date().toString()));
-            Request request = Request
-                    .newStatusUpdateRequest(Session.getActiveSession(), message, place, tags, new Request.Callback() {
+            
+            byte[] byteData = null;
+            String agendaFilename = lastPictureTakenUri.toString();
+            Log.i(TAG, "FB path: " + agendaFilename);
+            Bundle params = new Bundle();
+            Bitmap bi = BitmapFactory.decodeFile(agendaFilename);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            bi.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+            byteData = baos.toByteArray();
+            Log.i(TAG, "byteData: " + byteData);
+            params.putByteArray("photo", byteData);
+            
+            
+//			byte[] byteData = null;
+//			String agendaFilename = lastPictureTakenUri.toString();
+//			Log.i(TAG, "FB path: " + agendaFilename);
+//			
+//			Bitmap bi = BitmapFactory.decodeFile(agendaFilename);
+//			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//			bi.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+//			byteData = baos.toByteArray();
+//			Log.i(TAG, "byteData: " + byteData.toString());
+//
+//			try {
+//				Bundle params = new Bundle();
+//				params.putString("type", "cam_acc:feed");
+//			    params.putString("message", "Developer Test Msg; ignore");
+//			    params.putString("name", "Name");
+//			    params.putString("description", "Description");
+//			    params.putString("method", "photos.upload");
+//				params.putString("caption", "caption");
+//			    params.putByteArray("source", byteData);
+//
+//			    Request request = new Request(
+//				    Session.getActiveSession(),
+//				    "me/objects/cam_acc:feed", //"me/cam_acc:post",
+//				    params,
+//				    HttpMethod.POST
+//				);
+//
+//			    Response response = request.executeAndWait();
+//			    Log.d(TAG, "response: " + response);
+//			} catch (Exception e) {
+//				
+//			}
+ 
+            //stackoverflow suggest
+            Request request=new Request
+            		(Session.getActiveSession(),"me/photos", params,  HttpMethod.POST, new Request.Callback() {
+            
+//            original code	
+//            Request request = Request
+//                    .newStatusUpdateRequest(Session.getActiveSession(), message, place, tags, new Request.Callback() {
                         @Override
                         public void onCompleted(Response response) {
                             showPublishResult(message, response.getGraphObject(), response.getError());
@@ -1845,26 +2091,30 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
         }
     }
 
+
+
     /**
-     * Detects faces in the Camera view according to FaceDetectionListener.
-     * All faces detected will be stored into a Face array to be passed to
-     * be processed by this method. For one face it will detect if the face
-     * is centered. For two faces detects centered if neither face is in the
-     * center of the screen. For three or more faces it says multiple faces
-     * detected.
+     *
      */
     class FaceDetection implements Camera.FaceDetectionListener {
         /**
-         * Notify the listener of the detected faces in the preview frame.
-         *
-         * @param faces   The detected faces in a list
-         * @param camera  The Camera service object
+         * Detects faces in the Camera view according to FaceDetectionListener.
+         * All faces detected will be stored into a Face array to be passed to
+         * be processed by this method. For one face it will detect if the face
+         * is centered. For two faces detects centered if neither face is in the
+         * center of the screen. For three or more faces it says multiple faces
+         * detected.
+         * @param faces   the number of faces detected by Camera.FaceDetectionListener
+         * @param camera  not used. Exists for overriding onFaceDetection from
+         *                FaceDetectionListener
          */
+
         @Override
         public void onFaceDetection(Face[] faces, Camera camera) {
 
 			if (faceDetectionWrapper == true) {
-
+				Log.i(TAG, "Face detection mode activated");
+				
 				// no faces detected
 				if (faces.length == 0) {
 					Log.i(TAG, "faces detected: " + faces.length
@@ -1888,30 +2138,41 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
 					int halfHeight = surfaceView.getBottom() / 2;
 					Rect middle = new Rect(halfWidth - 50, halfHeight - 50,
 							halfWidth + 50, halfHeight + 50);
-					if (middle.intersect(realFaceRect)) {
+					
+					if (middle.intersect(realFaceRect) && balanced) {
 						Log.i(TAG, "People detected: " + faces.length);
-						speakText("One face Centered detected.");
-					} else {
+						speakText("One face Centered detected and your Camera is Level.");
+					}
+					else if (middle.intersect(realFaceRect) && !balanced ) {
+						Log.i(TAG, "People detected: " + faces.length);
+						speakText("One face Centered detected and your Camera is not Level.");
+					}
+					else if (!balanced){
 						Log.i(TAG, "People detected: " + faces.length
 								+ " // realFaceRect: " + realFaceRect.toString());
-						speakText("Face detected, not centered.");
+						speakText("Face detected, not centered and your camera is not level.");
 					}	
-				} else if (faces.length == 2) {
+				
+				} else if (faces.length == 2 && balanced ) {
 					Log.i(TAG, "People detected: " + faces.length
 							+ " // faces[0].rect: " + faces[0].rect.toString());
-					speakText("Two people detected, both are centered.");
-				} else if (faces.length >= 3) {
+					speakText("Two people detected, both are centered and your camera is level.");
+				}else if (faces.length == 2 && !balanced ) {
+						Log.i(TAG, "People detected: " + faces.length
+								+ " // faces[0].rect: " + faces[0].rect.toString());
+						speakText("Two people detected, both are centered but your camera is not level.");		
+					
+				} else if (faces.length >= 3 && balanced ) {
 					Log.i(TAG, "People detected: " + faces.length);
-					speakText("Multiple people detected.");
+					speakText("Multiple people detected and your camera is level.");
 				}
 			}
 		}
 
     } //end FaceDetection class
 
-
     /**
-     * Disables the VoiceEngine 
+     * Disables the VoiceEngine
      */
     private void disableVoiceEngine() {
     	Log.e(TAG, "disabled voice engine new helper method");
@@ -1983,14 +2244,30 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
      */
     @Override
     public void onStart() {
-    	Log.d(TAG, "onStart()");
+    	Log.d(TAG, "onStart()" + "returnSocialMedia: " + 
+    			returnSocialMedia);
     	textToSpeech = new TextToSpeech(CameraActivity.this, this); 
+    	
+    	mHandler.postDelayed(new Runnable() {
+			public void run() {
+				if (returnSocialMedia == true) {
+		    		if (isDescription == true) {
+		    			returnSocialMedia = false;
+		    			ttsPath(99);
+		    		} else if (isDescription == false) {
+		    			returnSocialMedia = false;
+		    			ttsPath(4);
+		    		}
+		    	}
+			}
+		}, 1500);
+
     	super.onStart();
     }
     
     /**
-    * Called when you are no longer visible to the user.
-    */
+     * Called when you are no longer visible to the user.
+     */
     @Override
     protected void onResume() {
         super.onResume();
@@ -1998,8 +2275,8 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
     }
     
     /**
-    * Called when you are no longer visible to the user.
-    */
+     * Called when you are no longer visible to the user.
+     */
     @Override
     public void onStop() {
     	Log.d(TAG, "onStop()");
@@ -2011,9 +2288,9 @@ public class CameraActivity extends FragmentActivity implements SurfaceHolder.Ca
     }
     
     /**
-    * Called as part of the activity lifecycle when an activity is going into
-    * the background, but has not (yet) been killed.
-    */
+     * Called as part of the activity lifecycle when an activity is going into
+     * the background, but has not (yet) been killed.
+     */
     @Override
     public void onPause() {
     	Log.d(TAG, "onPause()");

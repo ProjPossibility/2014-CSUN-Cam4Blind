@@ -2,18 +2,15 @@ package com.ss12.camacc.service;
 
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
-import android.speech.tts.TextToSpeech;
 import android.view.accessibility.AccessibilityEvent;
 import android.util.*;
-
-import java.util.HashMap;
 
 /**
  * Connects to the AccessibilityService that is built into the phone and makes use of it.
  * If the service is off, the application uses it's built in textToSpeech. If the service
  * is on, the application uses the AccessibilityService and turns off textToSpeech.
  */
-public class Accessibility_Service extends AccessibilityService implements TextToSpeech.OnInitListener {
+public class Accessibility_Service extends AccessibilityService {
 
     public static final String TAG = "volumeMaster";
     /**
@@ -43,17 +40,6 @@ public class Accessibility_Service extends AccessibilityService implements TextT
         setServiceInfo(info);
 
     }//end onServiceConnected
-
-    /**
-     * Is processed when Accessibility_Service is called.
-     *
-     * @param arg0 An argument
-     */
-    @Override
-    public void onInit(int arg0) {
-        // TODO Auto-generated method stub
-
-    }//end onInit
 
     /**
      * Called on an interrupt.
