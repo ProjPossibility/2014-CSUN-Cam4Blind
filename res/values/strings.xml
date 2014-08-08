@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">CamAcc SS12</string>
+    <string name="app_name">CamAcc</string>
 
     <string name="txt_pic">Take Picture</string>
 	<string name="txt_content_desc">You can press anywhere on your phone\'s screen surface to take a picture</string>
