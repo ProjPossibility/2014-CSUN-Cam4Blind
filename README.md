@@ -23,3 +23,9 @@ Check out the documentation located in the Docs folder or [online](http://projpo
 * Javier Pimentel
 
 Made possible through [ProjectPossiblity](http://projectpossibility.org/)
+
+[![Now available on the google play store click to view][2]][1]
+
+
+ [1]: https://play.google.com/store/apps/details?id=com.camacc
+ [2]: en_generic_rgb_wo_60.png
